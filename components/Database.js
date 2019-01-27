@@ -19,7 +19,8 @@ var userListSchema = new mongoose.Schema({
 });
 var editorDataSchema = new mongoose.Schema({
     "epochtime": Number, // get from ((new Date()).getTime()), with milliseconds
-    "editorData": String
+    "editorData": String, // Data slice
+    "dataIndex": Number
 });
 
 module.exports = {
@@ -32,6 +33,17 @@ module.exports = {
     databaseCollectionMaximumRecords: 1000,
     conns : {},
     models: {},
+
+    // Chunk long string
+    chunkLongString: function(str, size){
+        // Return: Array of strings with each not exceeding size
+        const numChunks = Math.ceil(str.length/size);
+        const chunks = new Array(numChunks);
+        for(let i = 0, o=0; i<numChunks; i++, o=o+size){
+            chunks[i] = str.substr(o, size);
+        }
+        return chunks;
+    },
 
     // Get called when successfully connected to database
     dbConnectCallback: function(that, forWhat){
@@ -111,6 +123,7 @@ module.exports = {
             }
         });
     },
+
     // Used to get editor data
     loadEditorData: function(username, password, errorCallBack, successCallBack){
         if (! this.baseChecking()){
@@ -148,8 +161,16 @@ module.exports = {
                             return;
                         }
                         else {
-                            successCallBack(docs[0].editorData);
-                            return;
+                            // documents may consist of many chunks, search again by using epoch time and combine them
+                            that.models[username].find({epochtime: docs[0].epochtime}).sort({dataIndex: 1}).exec(function(err, docs){
+                                let editorDataChunkNum = docs.length;
+                                let editorDataChunks = new Array(editorDataChunkNum);
+                                for (let i = 0; i < editorDataChunkNum; i++){
+                                    editorDataChunks[i] = docs[i].editorData;
+                                }
+                                successCallBack(editorDataChunks.join("")); // Concatenate editorDataChunks and return it to client
+                                return;
+                            });
                         }
                     });
                 };
@@ -191,11 +212,16 @@ module.exports = {
 
                 // Step 2: Create Callback to save data. Will be called at Step 3
                 var saveCallBack = function(){
-                    var currentTime = new Date().getTime();
-                    var newRecord = new that.models[username]({"epochtime": currentTime, "editorData": editorData});
-                    newRecord.save(function(err, record){
+                    let currentTime = new Date().getTime();
+                    let dataChunks = that.chunkLongString(editorData, 15*1000*1000);
+                    const dataChunkNum = dataChunks.length;
+                    let recordChunks = new Array(dataChunkNum);
+                    for (let i = 0; i < dataChunkNum; i++){
+                        recordChunks[i] = {"epochtime": currentTime, "editorData": dataChunks[i], "dataIndex": i};
+                    }
+                    that.models[username].insertMany(recordChunks, function(err, docs){
                         if(err) {
-                            errorCallBack("database cannot save editor data now");
+                            errorCallBack("database cannot save editor data now"+err.toString());
                             return;
                         }
                         else{
