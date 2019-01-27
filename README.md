@@ -1,0 +1,1 @@
+Command to start mongodb: mongod --dbpath ./db
