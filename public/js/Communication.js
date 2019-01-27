@@ -10,15 +10,15 @@ Communication.prototype = {
     reconnectTimesLimit:  10,
     reconenctTimes: 10,
     fileEntryContainer: undefined,
-    sendStatus: function(editorJSON){
+    sendStatus: function(editor){
         var start = performance.now();
-        var editorJSONstring = JSON.stringify(editorJSON);
+        let editorJSONstring = JSON.stringify(editor.toJSON());
+        let dataToSend = {
+            editor: editorJSONstring,
+            username: username,
+            password: password};
         $.ajax({url: "api/save_data", method: "POST", dataType:"text",
-            data: {
-                editor: editorJSONstring,
-                username: username,
-                password: password
-            },
+            data: dataToSend,
             success: function(result){
                 console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Sent data to Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
                 },
@@ -70,8 +70,7 @@ Communication.prototype = {
                         console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: work in offline mode");
             }
         };
-        let wrappedContainer = new THREE.Group();
-        wrappedContainer.name = "fileEntry";
+        let wrappedContainer = undefined;
 
 
         this.socket.on("authentication", function(callBack){
@@ -91,6 +90,8 @@ Communication.prototype = {
         });
         this.socket.on("fileEntryModelUpdate", function(data, callBack){
             let modelFiles = undefined;
+            wrappedContainer = new THREE.Group();
+            wrappedContainer.name = "fileEntry";
 
             // Parse fileEntryModel, and check validation
             try{
@@ -111,10 +112,7 @@ Communication.prototype = {
 
 
             // Only one fileEntry allowed in scene, so remove old one if already defined
-            if (typeof(that.fileEntryContainer) !== "undefined"){
-                // There can only be one model(s) from fileEntry at one time
-                editor.removeObject(that.fileEntryContainer);
-            }
+            editor.removeObjectByName("fileEntry", editor.scene); // This will remove all object with name fileEntry under scene, be careful.
             // Based on file type (get from fileName), parse it and add to scene
             for (let modelFileIndex in modelFiles){
                 let modelFile = modelFiles[modelFileIndex];

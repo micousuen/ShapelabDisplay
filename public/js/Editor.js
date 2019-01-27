@@ -217,6 +217,23 @@ Editor.prototype = {
 
 	},
 
+    removeObjectByName: function(objectName, parentObject){
+	    // Warning: this function will remove all object with this name recursively
+		let that = this;
+		if (typeof(parentObject) === "undefined"){
+			parentObject = this.scene;
+		}
+		parentObject.traverse(function(child){
+			if (child.name === objectName){
+				that.removeHelper(child);
+				parentObject.remove(child);
+				that.signals.objectRemoved.dispatch(child);
+			}
+		});
+
+		this.signals.sceneGraphChanged.dispatch();
+    },
+
 	addGeometry: function ( geometry ) {
 
 		this.geometries[ geometry.uuid ] = geometry;

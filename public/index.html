@@ -269,8 +269,7 @@
 				    timeout = setTimeout(function(){
 				        editor.signals.sendSceneStarted.dispatch();
 				        timeout = setTimeout(function(){
-				            var editorJSON = editor.toJSON();
-				            communication.sendStatus( editorJSON );
+				            communication.sendStatus( editor );
 				        	editor.signals.sendSceneFinished.dispatch();
 						}, 100);
 					}, 1000);
