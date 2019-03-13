@@ -32,6 +32,16 @@ var Player = function ( editor ) {
 
 	} );
 
+	signals.startPlayerAndRecord.add( function () {
+
+		container.setDisplay( '' );
+
+		player.load( editor.toJSON() );
+		player.setSize( container.dom.clientWidth, container.dom.clientHeight );
+		player.playAndRecord();
+
+	} );
+
 	signals.stopPlayer.add( function () {
 
 		container.setDisplay( 'none' );
