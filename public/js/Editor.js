@@ -27,6 +27,7 @@ var Editor = function () {
 		// player
 
 		startPlayer: new Signal(),
+		startPlayerAndRecord: new Signal(),
 		stopPlayer: new Signal(),
 
 		// actions
@@ -35,7 +36,6 @@ var Editor = function () {
 		saveCanvasEvent: new Signal(),
 
 		// notifications
-
 		editorCleared: new Signal(),
 
 		sendSceneStarted: new Signal(),
