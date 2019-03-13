@@ -235,6 +235,7 @@
 				//
 
 				var timeout;
+				var saveStatus = 0;
 
 				function saveState( scene ) {
 
@@ -244,24 +245,26 @@
 
 					}
 
-					clearTimeout( timeout );
-
-					timeout = setTimeout( function () {
-
-						editor.signals.savingStarted.dispatch();
-
+					if (saveStatus !== 1){
+						clearTimeout( timeout );
+						saveStaus = 1;
 						timeout = setTimeout( function () {
+							editor.signals.savingStarted.dispatch();
 
-                            var editorJSON = editor.toJSON();
+							timeout = setTimeout( function () {
 
-							editor.storage.set( editorJSON );
-                            // communication.sendStatus( editorJSON );
+								var editorJSON = editor.toJSON();
 
-							editor.signals.savingFinished.dispatch();
+								editor.storage.set( editorJSON );
+								
+								editor.signals.savingFinished.dispatch();
+								
+								saveStatus = 0;
 
-						}, 100 );
+							}, 100 );
 
-					}, 1000 );
+						}, 60000 );
+					}
 				};
 
 				function sendScene(scene){
@@ -371,5 +374,6 @@
 			*/
 
 		</script>
+		<a id="imageDownload"></a>
 	</body>
 </html>

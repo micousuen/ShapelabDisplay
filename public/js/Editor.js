@@ -32,6 +32,7 @@ var Editor = function () {
 		// actions
 		refreshScene: new Signal(),
 		showModal: new Signal(),
+		saveCanvasEvent: new Signal(),
 
 		// notifications
 

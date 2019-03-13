@@ -155,7 +155,7 @@ Sidebar.Project = function ( editor ) {
 
 		rendererPropertiesRow.setDisplay( type === 'WebGLRenderer' ? '' : 'none' );
 
-		var renderer = new rendererTypes[ type ]( { antialias: antialias} );
+		var renderer = new rendererTypes[ type ]( { antialias: antialias, preserveDrawingBuffer: true} );
 		renderer.gammaInput = gammaIn;
 		renderer.gammaOutput = gammaOut;
 		if ( shadows && renderer.shadowMap ) {

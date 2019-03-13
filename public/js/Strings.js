@@ -240,6 +240,7 @@ var Strings = function ( config ) {
 			'sidebar/settings/shortcuts/scale': 'Scale',
 			'sidebar/settings/shortcuts/undo': 'Undo',
 			'sidebar/settings/shortcuts/focus': 'Focus',
+			'sidebar/settings/shortcuts/screenshot': 'Screenshot',
 
 			'sidebar/settings/viewport/grid': 'Grid',
 
@@ -489,6 +490,7 @@ var Strings = function ( config ) {
 			'sidebar/settings/shortcuts/scale': '缩放',
 			'sidebar/settings/shortcuts/undo': '撤销',
 			'sidebar/settings/shortcuts/focus': '聚焦',
+			'sidebar/settings/shortcuts/screenshot': '截屏',
 
 			'sidebar/settings/viewport/grid': '网格',
 

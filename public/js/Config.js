@@ -25,11 +25,12 @@ var Config = function () {
 
 		'settings/history': false,
 
-		'settings/shortcuts/translate': 'w',
-		'settings/shortcuts/rotate': 'e',
-		'settings/shortcuts/scale': 'r',
+		'settings/shortcuts/translate': 't',
+		'settings/shortcuts/rotate': 'r',
+		'settings/shortcuts/scale': 's',
 		'settings/shortcuts/undo': 'z',
-		'settings/shortcuts/focus': 'f'
+		'settings/shortcuts/focus': 'f',
+		'settings/shortcuts/screenshot': 'p'
 	};
 
 	if ( window.localStorage[ name ] === undefined ) {

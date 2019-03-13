@@ -300,6 +300,16 @@ var Viewport = function ( editor ) {
 
 	} );
 
+	signals.saveCanvasEvent.add(function(){
+		let imgData;
+		imgData = renderer.domElement.toDataURL("image/png");
+		// imgData = imgData.replace("image/png", "image/octet-stream");
+		let download = document.getElementById("imageDownload");
+		download.setAttribute('download', 'CanvasScreenShot.png');
+		download.setAttribute('href', imgData);
+		download.click();
+	});
+
 	signals.rendererChanged.add( function ( newRenderer ) {
 
 		if ( renderer !== null ) {
