@@ -20,7 +20,7 @@ var APP = {
 
 		this.load = function ( json ) {
 
-			renderer = new THREE.WebGLRenderer( { antialias: true } );
+			renderer = new THREE.WebGLRenderer( { antialias: true, preserveDrawingBuffer: true} );
 			renderer.setClearColor( 0x000000 );
 			renderer.setPixelRatio( window.devicePixelRatio );
 
@@ -79,7 +79,7 @@ var APP = {
 				for ( var i = 0; i < scripts.length; i ++ ) {
 
 					var script = scripts[ i ];
-
+					console.log(script);
 					var functions = ( new Function( scriptWrapParams, script.source + '\nreturn ' + scriptWrapResult + ';' ).bind( object ) )( this, renderer, scene, camera );
 
 					for ( var name in functions ) {

@@ -9,23 +9,23 @@ Menubar.Status = function ( editor ) {
 	var container = new UI.Panel();
 	container.setClass( 'menu right' );
 
-	var clearDB = new UI.Button('clear LocalDB');
-	clearDB.onClick(function(){
+	var clearLocalDb = new UI.Button('CLEAR');
+	clearLocalDb.onClick(function(){
 		editor.signals.clearScene.dispatch();
 	});
-	container.add(clearDB);
+	container.add(clearLocalDb);
 
-	var loadScene = new UI.Button('loadScene');
+	var loadScene = new UI.Button('LOAD');
 	loadScene.onClick(function(){
 		editor.signals.loadScene.dispatch();
 	});
 	container.add(loadScene);
 
-    var sendScene = new UI.Button('sendScene');
-    sendScene.onClick(function(){
+    var saveScene = new UI.Button('SAVE');
+    saveScene.onClick(function(){
         editor.signals.sendScene.dispatch();
     });
-    container.add(sendScene);
+    container.add(saveScene);
 
 	var autosave = new UI.THREE.Boolean( editor.config.getKey( 'autosave' ), strings.getKey( 'menubar/status/autosave' ) );
 	autosave.text.setColor( '#888' );
@@ -56,10 +56,10 @@ Menubar.Status = function ( editor ) {
 
 	} );
 
-	var version = new UI.Text( 'r' + THREE.REVISION );
-	version.setClass( 'title' );
-	version.setOpacity( 0.5 );
-	container.add( version );
+	// var version = new UI.Text( 'r' + THREE.REVISION );
+	// version.setClass( 'title' );
+	// version.setOpacity( 0.5 );
+	// container.add( version );
 
 	return container;
 
