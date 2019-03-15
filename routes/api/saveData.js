@@ -1,8 +1,5 @@
 var db = require('../../components/Database');
 
-// Connect to our database
-db.connect("API/saveData");
-
 // save our data operation
 module.exports = {
     save_data: function(req, res){
