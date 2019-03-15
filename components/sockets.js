@@ -2,24 +2,22 @@ var socketIO = require('socket.io');
 var zmq = require('zeromq');
 var db = require('./Database');
 
-db.connect("socket");
-
 module.exports = {
-    io: null, // base socket to accept connection from clients, used to broadcast to users
-    entryio: null, // zmq io to accept files from other programs, used to accept data from other programs
+    toClientIO: null, // base socket to accept connection from clients, used to broadcast to users. Using socket.io
+    entryio: null, // zmq io to accept files from other programs, used to accept data from other programs. Using zmq
     socketsPool: {},
     getClientNumInRoom: function(roomID){
-        if (typeof(this.io.sockets.adapter.rooms[roomID]) !== "undefined")
-            return this.io.sockets.adapter.rooms[roomID].length;
+        if (typeof(this.toClientIO.sockets.adapter.rooms[roomID]) !== "undefined")
+            return this.toClientIO.sockets.adapter.rooms[roomID].length;
         else
             return 0;
     },
     connect_io: function(httpServer, options){
-        this.io = new socketIO(httpServer, options);
+        this.toClientIO = new socketIO(httpServer, options);
     },
     set_io: function(){
         var that = this;
-        this.io.on('connection', function(socket){
+        this.toClientIO.on('connection', function(socket){
             socket.emit('authentication', function(data){
                 socket.on('disconnect', (reason) => {
                     socket.leave(data.username);
@@ -79,7 +77,7 @@ module.exports = {
                             // traverse stored data, and send data to every client
                             for (let user in userData){
                                 if (user in userData){
-                                    that.io.to(user).emit("fileEntryModelUpdate", JSON.stringify(userData[user]));
+                                    that.toClientIO.to(user).emit("fileEntryModelUpdate", JSON.stringify(userData[user]));
                                 }
                             }
                             // Send out reply here

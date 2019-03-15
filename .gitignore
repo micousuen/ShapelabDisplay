@@ -1,0 +1,7 @@
+db
+node_modules
+.idea
+package-lock.json
+.DS_Store
+Thumbs.db
+*.swp

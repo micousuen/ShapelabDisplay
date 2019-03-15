@@ -120,6 +120,11 @@ Communication.prototype = {
                     case "obj":
                         let container = new THREE.OBJLoader().parse(modelFile.fileData);
                         container.name = modelFile.fileName;
+                        // // Should Generate animation script here.
+                        // container.translateX(1);
+                        // container.translateY(1);
+                        // container.translateZ(1);
+                        // console.log(container.position);
                         wrappedContainer.add(container);
                         break;
                     default:
