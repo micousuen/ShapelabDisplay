@@ -9,10 +9,20 @@ var debug = require('debug')('gui-sc:server');
 var http = require('http');
 var interfaceBindTo = "0.0.0.0"; // 0.0.0.0 bind to all interfaces, localhost or 127.0.0.1 bind to local network only
 var sockets = require('../components/sockets');
+var db = require('../components/Database.js');
 
 /**
  * Get port from environment and store in Express.
  */
+var mongoServer = "localhost";
+var mongoPort = 27017;
+if (process.argv.length > 3){
+  mongoPort = parseInt(process.argv[3]);
+}
+if (process.argv.length > 2){
+  mongoServer = process.argv[2];
+}
+
 
 var port = normalizePort(process.env.PORT || '8080'); // use PORT=8080 node CanvasDisplay.js to set port you want to listen to
 app.set('port', port);
@@ -31,6 +41,14 @@ var socketsOptions = {
     pingTimeout: 5000,
     pingInterval: 30000
 };
+/**
+* Connect to mongodb
+* */
+db.connect("all", mongoServer, mongoPort);
+
+/**
+ * Bind proxy to accept data from ZMQ port and send it to all users through socket.io
+ * */
 sockets.bind(server, socketsOptions, fileEntryAddr, fileEntryPort);
 
 /**
