@@ -108,8 +108,15 @@ module.exports = {
                                     processor(0, "failed in some message(s) authentication");
                                 },
                                 function(){
-                                    // Process message, broadcast to corresponding users
-                                    processor(1, {"username":ele.username, "userdata":{"fileName":ele.fileName, "fileData":ele.fileData}});
+                                    // Process message, broadcast everything except username and password to corresponding users. 
+                                    let copied_dict = {}
+                                    for (let field in ele){
+                                        if (! (field in ["username", "password"])){
+                                            copied_dict[field] = ele[field];
+                                        }
+                                    }
+                                    processor(1, {"username":ele.username,
+                                                  "userdata":copied_dict});
                                 })
                         }
                     }
