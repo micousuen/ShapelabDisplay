@@ -10,6 +10,10 @@ Communication.prototype = {
     reconnectTimesLimit:  10,
     reconenctTimes: 10,
     fileEntryContainer: undefined,
+    log: function(...log){
+        log_strings = new Array(log.length).fill("").map((x, i) => String(log[i]));
+        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', log_strings.join(""))
+    },
     sendStatus: function(editor){
         var start = performance.now();
         let editorJSONstring = JSON.stringify(editor.toJSON());
@@ -47,6 +51,32 @@ Communication.prototype = {
                failureCallBack();
            }
         });
+    },
+    applyTransformToContainer : function(container, transformList){
+        for (let index in transformList){
+            let transformDict = transformList[index];
+            if ("translate" in transformDict){
+                let translate_coord = transformDict["translate"];
+                if (translate_coord.length == 3){
+                    container.translateX(translate_coord[0]);
+                    container.translateY(translate_coord[1]);
+                    container.translateZ(translate_coord[2]);
+                }
+                else{
+                    that.log("Incorrect translate format")
+                }
+            }
+            if ("rotateX" in transformDict){
+                container.rotateX(transformDict["rotateX"])
+            }
+            if ("rotateY" in transformDict){
+                container.rotateY(transformDict["rotateY"])
+            }
+            if ("rotateZ" in transformDict){
+                container.rotateZ(transformDict["rotateZ"])
+            }
+        }
+        return container
     },
     socketConnect : function(editor){
         var that = this;
@@ -116,19 +146,21 @@ Communication.prototype = {
             // Based on file type (get from fileName), parse it and add to scene
             for (let modelFileIndex in modelFiles){
                 let modelFile = modelFiles[modelFileIndex];
-		let container = null;
+                let container = null;
                 switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".")-1 >>> 0) + 2)){
                     case "obj":
+                        // Load model to container
                         container = new THREE.OBJLoader().parse(modelFile.fileData);
                         container.name = modelFile.fileName;
-                        // // Should Generate animation script here.
-                        // container.translateX(1);
-                        // container.translateY(1);
-                        // container.translateZ(1);
-                        // console.log(container.position);
+
+                        // If configuration exist, set model to that configuration
+                        if ("fileConfiguration" in modelFile){
+                            container = that.applyTransformToContainer(container, modelFile.fileConfiguration)
+                        }
                         wrappedContainer.add(container);
                         break;
                     case "ply":
+                        // Load model to container
                         let loadTimeBefore = new Date().getTime();
                         let geometry = new THREE.PLYLoader().parse(modelFile.fileData);
                         var material = new THREE.MeshStandardMaterial({color: 0x0055ff, flatShading: true});
@@ -136,6 +168,11 @@ Communication.prototype = {
                         container = new THREE.Mesh(geometry, material);
                         console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: cost: ", new Date().getTime() - loadTimeBefore, " ms in loading PLY model");
                         container.name = modelFile.fileName;
+
+                        // If configuration exist, set model to that configuration
+                        if ("fileConfiguration" in modelFile){
+                            container = that.applyTransformToContainer(container, modelFile.fileConfiguration)
+                        }
                         wrappedContainer.add(container);
                         break;
                     default:
