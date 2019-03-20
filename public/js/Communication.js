@@ -116,15 +116,26 @@ Communication.prototype = {
             // Based on file type (get from fileName), parse it and add to scene
             for (let modelFileIndex in modelFiles){
                 let modelFile = modelFiles[modelFileIndex];
+		let container = null;
                 switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".")-1 >>> 0) + 2)){
                     case "obj":
-                        let container = new THREE.OBJLoader().parse(modelFile.fileData);
+                        container = new THREE.OBJLoader().parse(modelFile.fileData);
                         container.name = modelFile.fileName;
                         // // Should Generate animation script here.
                         // container.translateX(1);
                         // container.translateY(1);
                         // container.translateZ(1);
                         // console.log(container.position);
+                        wrappedContainer.add(container);
+                        break;
+                    case "ply":
+                        let loadTimeBefore = new Date().getTime();
+                        let geometry = new THREE.PLYLoader().parse(modelFile.fileData);
+                        var material = new THREE.MeshStandardMaterial({color: 0x0055ff, flatShading: true});
+                        geometry.computeVertexNormals();
+                        container = new THREE.Mesh(geometry, material);
+                        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: cost: ", new Date().getTime() - loadTimeBefore, " ms in loading PLY model");
+                        container.name = modelFile.fileName;
                         wrappedContainer.add(container);
                         break;
                     default:
