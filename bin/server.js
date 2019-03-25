@@ -14,7 +14,7 @@ var db = require('../components/Database.js');
 /**
  * Get port from environment and store in Express.
  */
-var mongoServer = "localhost";
+var mongoServer = "127.0.0.1";
 var mongoPort = 27017;
 if (process.argv.length > 3){
   mongoPort = parseInt(process.argv[3]);
