@@ -23,7 +23,11 @@ socket.connect("tcp://127.0.0.1:8081") # find out server's address and port for 
 # Prepare data to send, turn it to byte string.
 # Data we send out should be byte string, which is wrapped in json
 # 
-dataString = json.dumps([{"fileName": "blocks.obj", "fileData": fileData("./blocks.obj"), "username": "admin", "password": "admin"}], sort_keys=True)
+dataString = json.dumps([{"fileName": "blocks.obj", \
+                          "fileData": fileData("./blocks.obj"), \
+                          "fileConfiguration": [{"translate": [1, 1, 1]}, {"rotateX": 1}, {"rotateZ": 1}, {"rotateY": 1}],\
+                          "username": "admin", \
+                          "password": "admin"}], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
 while True:
     t1 = time.time()

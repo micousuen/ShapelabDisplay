@@ -17,10 +17,11 @@ Or to install it by yourself, but you need to set up database by yourself.
 mongod --dbpath=./db
 ```
 
-And insert following information to your database:
+And insert following information to your shapelab database:
 
 ```console
 foo@bar~$: mongo
+> use shapelab
 > db.createUser({
     user:"shapelab",
     pwd:"shapelab",
