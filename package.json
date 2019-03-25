@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/server.js",
-	"startdocker": "node ./bin/server.js mongo 27017"
+    "startdocker": "node ./bin/server.js mongo 27017"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
