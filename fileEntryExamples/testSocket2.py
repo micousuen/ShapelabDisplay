@@ -23,11 +23,33 @@ socket.connect("tcp://127.0.0.1:8081") # find out server's address and port for 
 # Prepare data to send, turn it to byte string.
 # Data we send out should be byte string, which is wrapped in json
 # 
-dataString = json.dumps([{"fileName": "blocks.obj", \
-                          "fileData": fileData("./blocks.obj"), \
-                          "fileConfiguration": [{"translate": [1, 1, 1]}, {"rotateX": 1}, {"rotateZ": 1}, {"rotateY": 1}],\
-                          "username": "admin", \
-                          "password": "admin"}], sort_keys=True)
+block_dict = {"fileName": "blocks.obj", \
+			  "fileData": fileData("./blocks.obj"), \
+			  "configuration": [{"rotateX": 1}, {"rotateY": 1}, {"rotateZ": 1}, {"translate": [1, 1, 1]}],\
+			  "color": 0x0055ff, \
+			  "username": "admin", \
+			  "password": "admin"}
+lines_dict = {"geometryType": "lines", \
+			  "geometryName": "lines", \
+			  "geometryData": [[0, 0, 2],[10, 10, 2],[10, 0, 2]],\
+			  "color": 0x0000ff, \
+			  "username": "admin", \
+			  "password": "admin"}
+linesegs_dict = {"geometryType": "lineSegments", \
+				 "geometryName": "lines", \
+				 "geometryData": [[0, 0, 1],[10, 10, 1],[10, 0, 1], [0, 10, 1]],\
+				 "color": 0x00ff00, \
+				 "configuration": [{"rotateX": 1}, {"rotateY": 1}, {"rotateZ": 1}, {"translate": [0, 0, 0]}],\
+				 "username": "admin", \
+				 "password": "admin"}
+linesegpairs_dict = {"geometryType": "lineSegmentPairs", \
+					 "geometryName": "lines", \
+					 "geometryData": [[[0, 0, 0],[10, 10]],[[10, 0, 0], [0, -10, 0]]],\
+					 "color": 0xff0000, \
+					 "username": "admin", \
+					 "password": "admin"}
+
+dataString = json.dumps([block_dict, lines_dict, linesegs_dict, linesegpairs_dict], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
 while True:
     t1 = time.time()
