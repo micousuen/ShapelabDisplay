@@ -30,7 +30,9 @@ var Config = function () {
 		'settings/shortcuts/scale': 's',
 		'settings/shortcuts/undo': 'z',
 		'settings/shortcuts/focus': 'f',
-		'settings/shortcuts/screenshot': 'p'
+		'settings/shortcuts/screenshot': 'p',
+
+		'settings/liveupdate/defaultGroupName': 'fileEntry'
 	};
 
 	if ( window.localStorage[ name ] === undefined ) {
