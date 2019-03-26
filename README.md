@@ -42,29 +42,65 @@ npm start
 ## Live Update
 By default, server will use port 8081 to accept data. All authenticated data accepted through that port will broadcast to all corresponding user. We are using [ZMQ](http://zeromq.org/) protocol to receive data.
 
-If you want to send data to server, first you need to initialize a ZMQ REQ socket, then send your model through stringified json format. Here is the format for the json:
+If you want to send data to server, first you need to initialize a ZMQ REQ socket, then send your model through stringified json object.
 
-```json
-[{
-    "username": "<YOUR_USERNAME>",
-    "password": "<YOUR_PASSWORD>",
-    "fileName": "<YOUR_FILENAME>.<CORRECT_3D_OBJECT_SUFFIX>",
-    "fileData": "<YOUR_FILE_DATA_STRING_IN_UTF8_ENCODING>",
-    "fileConfiguration": [<TRANFORMATION_DICT>]
-},
+### JSON Object format
+In this json object, you can insert multiple objects dictionary, but each of them should follow either MODELFILE\_DICT or GEOMETRY\_DICT format.
+
+Definition of json object: An array(list) contain MODELFILE\_DICT or GEOMETRY\_DICT or mix of these two.
+```
+[
+MODELFILE_DICT,
+MODELFILE_DICT,
+GEOMETRY_DICT,
 ...
 ]
 ```
+#### MODELFILE_DICT format
+MODELFILE_DICT must have fields "fileName", "fileData", "username", "password". It is optional to have "color" and "configuration" fields.
+```
+{
+    "fileName": "<MODEL_NAME>.<CORRECT_MODEL_SUFFIX>",
+    "fileData": "<FILE_DATA_STRING>",
+    "username": "<SHAPELAB_DISPLAY_USERNAME>",
+    "password": "<SHAPELAB_DISPLAY_PASSWORD>",
+    (Optional) "color": 0xff0000(Color RGB hex here),
+    (Optional) "configuration": <TRANSOFORMATION_ARRAY>  
+}
+```
 
-And TRANFORMATION_DICT can be
+#### GEOMETRY_DICT format
+And GEOMETRY_DICT must have fields "geometryType", "geometryData", "username", "password". It is optinal to have "geometryName", "color" and "configuration" fields.
+```
+{
+    "geometryTypes": "<GEOMETRY_TYPE_STRING>"(Check all support type string below),
+    "geometryData": "<GEOMETRY_TYPE_CORRESPONDING_DATA>",
+    "username": "<SHAPELAB_DISPLAY_USERNAME>",
+    "password": "<SHAPELAB_DISPLAY_PASSWORD>",
+    (Optional) "geometryName": "<NAME_OF_GEOMETRY_OBJECT>"(If this field missing, use geometryTypes as geometryName),
+    (Optional) "color": 0xff0000(Color RGB hex here),
+    (Optional) "configuration": <TRANSOFORMATION_ARRAY>  
 
-```json
+}
+```
+Now GEOMETRY_TYPE_STRING can be "lines", "lineSegments", "lineSegmentPairs".
+
+If is "lines", then in geometryData user should provide an array of 3D vertices. A line will draw between consecutive pair of vertices. etc. [[0, 0, 0], [1, 0, 0], [0, 1, 0]] will draw following lines: [0, 0, 0] => [1, 0, 0], [1, 0, 0] => [0, 1, 0]
+
+If is "lineSegments", then in geometryData user should provide an array of 3D vertices. A line will draw between each pair of vertices. etc. [[0, 0, 0], [1, 0, 0], [0, 1, 0], [2, 0, 0]] will draw following lines: [0, 0, 0] => [1, 0, 0], [0, 1, 0] => [2, 0, 0]
+
+If is "lineSegmentPairs", then in geometryData user should provide an array of line segment, in which start and end point should be 3D vertices. etc. [[[0, 0, 0], [1, 0, 0]], [[0, 1, 0], [2, 0, 0]]] will draw following lines: [0, 0, 0] => [1, 0, 0], [0, 1, 0] => [2, 0, 0]
+
+#### TRANSFORMATION_ARRAY
+TRANSOFORMATION_ARRAY is an array contains TRANFORMATION_DICT. Transformation will be applied in order.
+```
+[TRANSFORMATION_DICT, ...]
+```
+
+TRANSFORMATION_DICT options
+```
 {"translate": [REAL_NUMBER, REAL_NUMBER, REAL_NUMBER]}
 {"rotateX": REAL_NUMBER}
 {"rotateY": REAL_NUMBER}
 {"rotateZ": REAL_NUMBER}
 ```
-
-Transformation_dict in "fileConfiguration" will be applied to that object in order.
-
-You can have multiple objects in one json object, then all objects will show on screen at the same time.

@@ -58,9 +58,9 @@ Communication.prototype = {
             if ("translate" in transformDict){
                 let translate_coord = transformDict["translate"];
                 if (translate_coord.length == 3){
-                    container.translateX(translate_coord[0]);
-                    container.translateY(translate_coord[1]);
-                    container.translateZ(translate_coord[2]);
+                    container.position.x += translate_coord[0];
+                    container.position.y += translate_coord[1];
+                    container.position.z += translate_coord[2];
                 }
                 else{
                     that.log("Incorrect translate format")
@@ -121,67 +121,187 @@ Communication.prototype = {
         this.socket.on("fileEntryModelUpdate", function(data, callBack){
             let modelFiles = undefined;
             wrappedContainer = new THREE.Group();
-            wrappedContainer.name = "fileEntry";
+            wrappedContainer.name = editor.config.getKey("settings/liveupdate/defaultGroupName");
 
-            // Parse fileEntryModel, and check validation
+            // Parse fileEntryModel
             try{
                 modelFiles = JSON.parse(data);
-                // Traverse modelFiles, check validation
-                for (let modelFileIndex in modelFiles){
-                    let modelFile = modelFiles[modelFileIndex];
-                    if ((! "fileName" in modelFile) || (! "fileData" in modelFile)){
-                        throw "fileEntryModeUpdate format error"
-                    }
-                }
                 console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: Received models size: ", data.length, ", patches: ", modelFiles.length);
             }
             catch(err){
-                console.log("Error: cannot parse fileEntryModelUpdate data or format error: ", err);
+                console.log("Error: cannot parse fileEntryModelUpdate, data or format error: ", err);
                 throw "Error!";
             }
 
 
             // Only one fileEntry allowed in scene, so remove old one if already defined
-            editor.removeObjectByName("fileEntry", editor.scene); // This will remove all object with name fileEntry under scene, be careful.
+            editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"), editor.scene); // This will remove all object with name fileEntry under scene, be careful.
             // Based on file type (get from fileName), parse it and add to scene
             for (let modelFileIndex in modelFiles){
                 let modelFile = modelFiles[modelFileIndex];
-                let container = null;
-                switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".")-1 >>> 0) + 2)){
-                    case "obj":
-                        // Load model to container
-                        container = new THREE.OBJLoader().parse(modelFile.fileData);
-                        container.name = modelFile.fileName;
-
-                        // If configuration exist, set model to that configuration
-                        if ("fileConfiguration" in modelFile){
-                            container = that.applyTransformToContainer(container, modelFile.fileConfiguration)
-                        }
+                if ("geometryType" in modelFile){
+                    let container = that.addGeometryObjects(modelFile);
+                    if (typeof(container) !== "undefined"){
                         wrappedContainer.add(container);
-                        break;
-                    case "ply":
-                        // Load model to container
-                        let loadTimeBefore = new Date().getTime();
-                        let geometry = new THREE.PLYLoader().parse(modelFile.fileData);
-                        var material = new THREE.MeshStandardMaterial({color: 0x0055ff, flatShading: true});
-                        geometry.computeVertexNormals();
-                        container = new THREE.Mesh(geometry, material);
-                        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: cost: ", new Date().getTime() - loadTimeBefore, " ms in loading PLY model");
-                        container.name = modelFile.fileName;
-
-                        // If configuration exist, set model to that configuration
-                        if ("fileConfiguration" in modelFile){
-                            container = that.applyTransformToContainer(container, modelFile.fileConfiguration)
-                        }
+                    }
+                }
+                if ("fileName" in modelFile) {
+                    let container = that.addModelFile(modelFile);
+                    if (typeof(container) !== "undefined"){
                         wrappedContainer.add(container);
-                        break;
-                    default:
-                        console.log("Error: fileEntryFormat not implemented or error")
+                    }
                 }
             }
             // Add wrappedContainer to scene
             that.fileEntryContainer = wrappedContainer;
             editor.addObject(wrappedContainer);
         });
+    },
+    addModelFile: function(modelFile){
+        let that = this;
+
+        if ((! "fileName" in modelFile) || (! "fileData" in modelFile)){
+            console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: fileEntry modelFile format error");
+            return undefined;
+        }
+
+        let container = null, defaultMeshColor = 0x0055ff, material=null;
+        switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".") - 1 >>> 0) + 2)) {
+            case "obj":
+                // Load model to container
+                container = new THREE.OBJLoader().parse(modelFile.fileData);
+                container.name = modelFile.fileName;
+                if ("color" in modelFile){
+                    defaultMeshColor = modelFile["color"];
+                }
+                material = new THREE.MeshPhongMaterial({color: defaultMeshColor});
+
+
+                // If configuration exist, set model to that configuration
+                if ("configuration" in modelFile) {
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+                else if ("fileConfiguration" in modelFile){
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+
+                // Set material for all objs
+                for (let index in container.children){
+                    container.children[index].material = material;
+                }
+                return container;
+                break;
+            case "ply":
+                // Load model to container
+                let loadTimeBefore = new Date().getTime();
+                let geometry = new THREE.PLYLoader().parse(modelFile.fileData);
+                if ("color" in modelFile){
+                    defaultMeshColor = modelFile["color"];
+                }
+                material = new THREE.MeshPhongMaterial({color: defaultMeshColor});
+
+                // Set up geometry and compute normals for display
+                geometry.computeVertexNormals();
+                container = new THREE.Mesh(geometry, material);
+                console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Info: cost: ", new Date().getTime() - loadTimeBefore, " ms in loading PLY model");
+                container.name = modelFile.fileName;
+
+                // If configuration exist, set model to that configuration
+                if ("configuration" in modelFile) {
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+                else if ("fileConfiguration" in modelFile){
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+                return container;
+                break;
+            default:
+                console.log("Error: fileEntryFormat not implemented or wrong data");
+                return undefined;
+        }
+    },
+    addGeometryObjects: function(modelFile){
+        let that = this;
+        if ((! "geometryType" in modelFile) || (! "geometryData" in modelFile)){
+            console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: fileEntry modelFile format error");
+            return undefined;
+        }
+
+        function geometryDataValidation(geometryData){
+            let vd = geometryData;
+            for (let index in vd){
+                if (vd[index].length !== 3 && vd[index].length !== 2){
+                    console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: geometryData error, illegal vertex length");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        let container=null, vd=null, material=null, geometry=null, vertices=null;
+        let defaultLineColor = 0x000000;
+        switch (true){
+            case ["lines", "lineSegments", "lineSegmentPairs"].includes(modelFile["geometryType"]):
+                // Validation checking
+                vd = modelFile["geometryData"];
+                if (! geometryDataValidation(vd)){
+                    return undefined;
+                }
+
+                // Set up line color and material
+                if ("color" in modelFile){
+                    defaultLineColor = modelFile["color"];
+                }
+                material = new THREE.LineBasicMaterial({color: defaultLineColor});
+
+                // Create line geometry between consecutive pair of vertices, won't draw from last point to first point
+                geometry = new THREE.BufferGeometry();
+                vertices = [];
+                for (let index in vd){
+                    switch(modelFile["geometryType"]){
+                        case "lines":
+                        case "lineSegments":
+                            vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            break;
+                        case "lineSegmentPairs":
+                            vertices.push(vd[index][0][0], vd[index][0][1], typeof(vd[index][0][2]) !== "undefined" ? vd[index][0][2] : 0);
+                            vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
+                            break;
+                    }
+                }
+                geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+
+
+                // Create container for lines
+                switch(modelFile["geometryType"]){
+                    case "lines":
+                        container = new THREE.Line(geometry, material);
+                        break;
+                    case "lineSegments":
+                    case "lineSegmentPairs":
+                        container = new THREE.LineSegments(geometry, material);
+                        break;
+                }
+
+                if ("geometryName" in modelFile){
+                    container.name = modelFile["geometryName"];
+                }
+                else{
+                    container.name = modelFile["geometryType"];
+                }
+
+                // If configuration exist, set model to that configuration
+                if ("configuration" in modelFile) {
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+
+                return container;
+                break;
+            case true:
+            default:
+                console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: GeometryFormat not implemented or wrong data");
+                console.log(modelFile);
+                return undefined;
+        }
     }
 };
