@@ -1,3 +1,0 @@
-20190127.0:
-1. Solved editor larger than 16MB cannot be saved in mongoDB problem(limited by BSON limitation). Now data will be split to chunks and saved, when loading data these chunks will be recombined and send to user. 
-2. Added method removeObjectByName in editor. This is used to solve fileEntry duplicate problem when fileEntry already exist in server database and client received new fileEntry then old fileEntry won't be deleted problem.  

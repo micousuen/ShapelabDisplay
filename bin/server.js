@@ -4,12 +4,12 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+var app = require('../components/app');
 var debug = require('debug')('gui-sc:server');
 var http = require('http');
 var interfaceBindTo = "0.0.0.0"; // 0.0.0.0 bind to all interfaces, localhost or 127.0.0.1 bind to local network only
 var sockets = require('../components/sockets');
-var db = require('../components/Database.js');
+var db = require('../components/database.js');
 
 /**
  * Get port from environment and store in Express.
