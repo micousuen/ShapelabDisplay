@@ -90,7 +90,6 @@ module.exports = {
         }
 
     },
-
     // Basic checking to make sure connection built
     baseChecking: function(){
         if ( ! this.conns.hasOwnProperty("base") || typeof(this.conns["base"]) === "undefined" || this.conns['base'].readyState !== 1 ){
