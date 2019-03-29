@@ -1,4 +1,4 @@
-var db = require('../../components/Database');
+var db = require('../../components/database');
 
 // save our data operation
 module.exports = {

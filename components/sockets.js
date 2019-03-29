@@ -1,6 +1,6 @@
 var socketIO = require('socket.io');
 var zmq = require('zeromq');
-var db = require('./Database');
+var db = require('./database');
 
 module.exports = {
     toClientIO: null, // base socket to accept connection from clients, used to broadcast to users. Using socket.io
@@ -26,7 +26,7 @@ module.exports = {
                 db.userAuthenticate(data.username, data.password,
                     function(errorReason){
                         // Failed in authentication, won't let it connect to our server socket
-                        console.log("Warning: Incorrect socket authentication, disconnect socket ", data);
+                        console.log("Warning: Incorrect socket authentication, disconnect socket ", data, ", because ", errorReason);
                         socket.emit("authenticationFailed");
                         socket.disconnect(true);
                     },
