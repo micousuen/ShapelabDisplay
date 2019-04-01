@@ -21,7 +21,7 @@ Communication.prototype = {
             editor: editorJSONstring,
             username: username,
             password: password};
-        $.ajax({url: "api/save_data", method: "POST", dataType:"text",
+        $.ajax({url: "api/save_data/editor", method: "POST", dataType:"text",
             data: dataToSend,
             success: function(result){
                 console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Sent data to Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
@@ -30,22 +30,47 @@ Communication.prototype = {
                 console.log(result);
             }});
     },
-    loadScene: function(editor, failureCallBack, successCallBack){
-        var start = performance.now();
-        var request = $.ajax({url: "api/load_data", method: "GET",
+    loadLatestLiveupdate: function(editor, failureCallBack, successCallBack){
+        let that = this;
+        let start = performance.now();
+        var editorRequest = $.ajax({url: "api/load_data/liveupdate", method: "GET",
             data: {
                 username: username,
                 password: password
             }});
-        request.done(function(msg){
-            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
+        editorRequest.done(function(msg){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load editor data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
+            // load live update
+            that.processFileEntryUpdate(editor, msg);
+            if (typeof(successCallBack) === "function"){
+                successCallBack();
+            }
+        });
+        editorRequest.fail(function(jqXHR, textStatus){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Cannot load data from server "+textStatus);
+            if (typeof(failureCallBack) === "function"){
+                failureCallBack();
+            }
+        });
+    },
+    loadScene: function(editor, failureCallBack, successCallBack){
+        let that = this;
+        var start = performance.now();
+        var editorRequest = $.ajax({url: "api/load_data/editor", method: "GET",
+            data: {
+                username: username,
+                password: password
+            }});
+        editorRequest.done(function(msg){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load editor data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
+            // Clear editor scene and load editor from result
             editor.clear();
             editor.fromJSON(JSON.parse(msg));
             if (typeof(successCallBack) === "function"){
                 successCallBack();
             }
         });
-        request.fail(function(jqXHR, textStatus){
+        editorRequest.fail(function(jqXHR, textStatus){
            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Cannot load data from server "+textStatus);
            if (typeof(failureCallBack) === "function"){
                failureCallBack();
@@ -118,44 +143,46 @@ Communication.prototype = {
             console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Failed in socket authentication, retrying...");
             reconnectOperation();
         });
-        this.socket.on("fileEntryModelUpdate", function(data, callBack){
-            let modelFiles = undefined;
-            wrappedContainer = new THREE.Group();
-            wrappedContainer.name = editor.config.getKey("settings/liveupdate/defaultGroupName");
+        this.socket.on("fileEntryModelUpdate", function(data, callBack){that.processFileEntryUpdate(editor, data, callBack)});
+    },
+    processFileEntryUpdate: function(editor, data, callBack){
+        let that = this;
+        let modelFiles = undefined;
+        wrappedContainer = new THREE.Group();
+        wrappedContainer.name = editor.config.getKey("settings/liveupdate/defaultGroupName");
 
-            // Parse fileEntryModel
-            try{
-                modelFiles = JSON.parse(data);
-                console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: Received models size: ", data.length, ", patches: ", modelFiles.length);
-            }
-            catch(err){
-                console.log("Error: cannot parse fileEntryModelUpdate, data or format error: ", err);
-                throw "Error!";
-            }
+        // Parse fileEntryModel
+        try{
+            modelFiles = JSON.parse(data);
+            console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: Received models size: ", data.length, ", patches: ", modelFiles.length);
+        }
+        catch(err){
+            console.log("Error: cannot parse fileEntryModelUpdate, data or format error: ", err);
+            throw "Error!";
+        }
 
 
-            // Only one fileEntry allowed in scene, so remove old one if already defined
-            editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"), editor.scene); // This will remove all object with name fileEntry under scene, be careful.
-            // Based on file type (get from fileName), parse it and add to scene
-            for (let modelFileIndex in modelFiles){
-                let modelFile = modelFiles[modelFileIndex];
-                if ("geometryType" in modelFile){
-                    let container = that.addGeometryObjects(modelFile);
-                    if (typeof(container) !== "undefined"){
-                        wrappedContainer.add(container);
-                    }
-                }
-                if ("fileName" in modelFile) {
-                    let container = that.addModelFile(modelFile);
-                    if (typeof(container) !== "undefined"){
-                        wrappedContainer.add(container);
-                    }
+        // Only one fileEntry allowed in scene, so remove old one if already defined
+        editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"), editor.scene); // This will remove all object with name fileEntry under scene, be careful.
+        // Based on file type (get from fileName), parse it and add to scene
+        for (let modelFileIndex in modelFiles){
+            let modelFile = modelFiles[modelFileIndex];
+            if ("geometryType" in modelFile){
+                let container = that.addGeometryObjects(modelFile);
+                if (typeof(container) !== "undefined"){
+                    wrappedContainer.add(container);
                 }
             }
-            // Add wrappedContainer to scene
-            that.fileEntryContainer = wrappedContainer;
-            editor.addObject(wrappedContainer);
-        });
+            if ("fileName" in modelFile) {
+                let container = that.addModelFile(modelFile);
+                if (typeof(container) !== "undefined"){
+                    wrappedContainer.add(container);
+                }
+            }
+        }
+        // Add wrappedContainer to scene
+        that.fileEntryContainer = wrappedContainer;
+        editor.addObject(wrappedContainer);
     },
     addModelFile: function(modelFile){
         let that = this;
@@ -248,12 +275,6 @@ Communication.prototype = {
                     return undefined;
                 }
 
-                // Set up line color and material
-                if ("color" in modelFile){
-                    defaultLineColor = modelFile["color"];
-                }
-                material = new THREE.LineBasicMaterial({color: defaultLineColor});
-
                 // Create line geometry between consecutive pair of vertices, won't draw from last point to first point
                 geometry = new THREE.BufferGeometry();
                 vertices = [];
@@ -270,6 +291,12 @@ Communication.prototype = {
                     }
                 }
                 geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+
+                // Set up Line Color and material
+                if ("color" in modelFile){
+                    defaultLineColor = modelFile["color"];
+                }
+                material = new THREE.LineBasicMaterial({color: defaultLineColor});
 
 
                 // Create container for lines

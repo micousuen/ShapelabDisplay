@@ -231,6 +231,9 @@
                                                     editor.selectByUuid( selected );
                                                 }
 											});  // Load state from server first, if failed then load from local database
+					// Load latest live update you first time load this page
+					console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Info: try to load latest live update data"+textStatus);
+					communication.loadLatestLiveupdate(editor);
 				} );
 
 				//

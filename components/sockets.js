@@ -57,6 +57,7 @@ module.exports = {
                 let requestStr = "";
                 let requestJson = undefined;
                 let userData = {};
+                let userAuth = {};
                 let processor = function(processStatus, data){ // processor is a function used to reply async query
                     // If processStatus === 1, data should have field "username" and "userdata". And in "userdata", "fileName" and "fileData" field should be there.
                     //                         Data will stored and send out when all of them are ready
@@ -72,12 +73,24 @@ module.exports = {
                         }
                         else{
                             userData[data.username] = [data.userdata];
+                            if ("password" in data) {
+                                userAuth[data.username] = data.password;
+                            }
                         }
                         if (messageTotal > 0 && messageProcessed === messageTotal){
                             // traverse stored data, and send data to every client
                             for (let user in userData){
-                                if (user in userData){
-                                    that.toClientIO.to(user).emit("fileEntryModelUpdate", JSON.stringify(userData[user]));
+                                // Server as proxy, send data to all clients
+                                let userDataArray = JSON.stringify(userData[user]);
+                                that.toClientIO.to(user).emit("fileEntryModelUpdate", userDataArray);
+                                // If password provided, save data to client's database
+                                if (user in userAuth){
+                                    db.saveLiveupdateData(user, userAuth[user], userDataArray,
+                                        function(err){
+                                            console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']'+' Error: '+err.toString())},
+                                        function(){
+                                            console.log("liveupdate data saved");
+                                        });
                                 }
                             }
                             // Send out reply here
@@ -116,7 +129,7 @@ module.exports = {
                                         }
                                     }
                                     processor(1, {"username":ele.username,
-                                                  "userdata":copied_dict});
+                                                  "userdata":copied_dict, "password": ele["password"]});
                                 })
                         }
                     }
