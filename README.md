@@ -104,3 +104,7 @@ TRANSFORMATION_DICT options
 {"rotateY": REAL_NUMBER}
 {"rotateZ": REAL_NUMBER}
 ```
+
+# Reference and acknowledge
+
+This project is based on [Three.js](https://github.com/mrdoob/three.js/) [editor](https://github.com/mrdoob/three.js/tree/master/editor).
