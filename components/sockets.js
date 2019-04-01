@@ -88,9 +88,7 @@ module.exports = {
                                     db.saveLiveupdateData(user, userAuth[user], userDataArray,
                                         function(err){
                                             console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']'+' Error: '+err.toString())},
-                                        function(){
-                                            console.log("liveupdate data saved");
-                                        });
+                                        function(){});
                                 }
                             }
                             // Send out reply here
