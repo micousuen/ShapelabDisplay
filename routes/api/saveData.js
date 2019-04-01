@@ -2,7 +2,7 @@ var db = require('../../components/database');
 
 // save our data operation
 module.exports = {
-    save_data: function(req, res){
+    saveEditorData: function(req, res){
         var editorData = req.body['editor'];
         var username = req.body['username'];
         var password = req.body['password'];
