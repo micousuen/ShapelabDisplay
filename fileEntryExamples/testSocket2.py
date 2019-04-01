@@ -48,8 +48,32 @@ linesegpairs_dict = {"geometryType": "lineSegmentPairs", \
 					 "color": 0xff0000, \
 					 "username": "admin", \
 					 "password": "admin"}
+line_fading_color = {"geometryType": "lineSegmentPairs", \
+					 "geometryName": "lines", \
+					 "geometryData": [[[0, 0, 4],[10, 10, 4]],[[10, 0, 4], [0, -10, 4]]],\
+					 "color": [0xff0000, 0x00ff00], \
+					 "username": "admin", \
+					 "password": "admin"}
+line_fading_color2 = {"geometryType": "lineSegments", \
+					 "geometryName": "lines", \
+					 "geometryData": [[0, 0, 5],[10, 10, 5],[10, 0, 5], [0, 10, 5]],\
+					 "color": [0xff0000, 0x00ff00], \
+					 "username": "admin", \
+					 "password": "admin"}
+line_fading_color3 = {"geometryType": "lines", \
+					 "geometryName": "lines", \
+					 "geometryData": [[0, 0, 6],[10, 10, 6],[10, 0, 6], [0, 10, 6]],\
+					 "color": [0xff0000, 0x00ff00], \
+					 "username": "admin", \
+					 "password": "admin"}
 
-dataString = json.dumps([block_dict, lines_dict, linesegs_dict, linesegpairs_dict], sort_keys=True)
+dataString = json.dumps([block_dict, \
+						 lines_dict, \
+						 linesegs_dict, \
+						 linesegpairs_dict, \
+						 line_fading_color, \
+						 line_fading_color2, \
+						 line_fading_color3], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
 while True:
     t1 = time.time()
