@@ -5,7 +5,8 @@ var loadData = require('./loadData');
 var saveData = require('./saveData');
 
 // save our data
-router.post('/save_data', saveData.save_data);
-router.get('/load_data', loadData.load_data);
+router.post('/save_data/editor', saveData.saveEditorData);
+router.get('/load_data/editor', loadData.loadEditorData);
+router.get('/load_data/liveupdate', loadData.loadLivaupdateData);
 
 module.exports = router;
