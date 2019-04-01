@@ -105,6 +105,15 @@ TRANSFORMATION_DICT options
 {"rotateZ": REAL_NUMBER}
 ```
 
+#### Advanced color setting
+If you are using GEOMETRY_DICT, you can use advanced color settings for lines. But for different GEOMETRY_TYPE_STRING, they will accept different color setting.
+
+For "lines", you can give it a hex number. you can give starting point and ending point color in a list. Or color for every vertex in list.
+
+For "lineSegments", you can give it a hex number. you can give starting point and ending point color for each segment. Or color for every vertex in list.
+
+For "lineSegmentPairs", you can give it a hex number. you can give starting point and ending point color for each segment. Or color for every vertex in list, or you can group every two vertices color in one list just like you did for vertices. 
+
 # Reference and acknowledge
 
 This project is based on [Three.js](https://github.com/mrdoob/three.js/) [editor](https://github.com/mrdoob/three.js/tree/master/editor).
