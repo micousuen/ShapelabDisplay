@@ -214,11 +214,17 @@ module.exports = {
                     }
                     else {
                         // documents may consist of many chunks, search again by using epoch time and combine them
-                        that.models[username].find({epochTime: docs[0].epochTime, "dataType":"liveupdate"}).sort({dataIndex: 1}).exec(function(err, docs){
+                        that.models[username].find({epochTime: docs[0].epochTime, "dataType":"liveupdate"}).exec(function(err, docs){
+                            // not using sort here, to avoid hit the mongo sort memory limit
                             let editorDataChunkNum = docs.length;
                             let editorDataChunks = new Array(editorDataChunkNum);
                             for (let i = 0; i < editorDataChunkNum; i++){
-                                editorDataChunks[i] = docs[i].data;
+                                for (let j = 0; j < editorDataChunkNum; j++){
+                                    if (docs[j]["dataIndex"] === i){
+                                        editorDataChunks[i] = docs[i].data;
+                                        break;
+                                    }
+                                }
                             }
                             successCallBack(editorDataChunks.join("")); // Concatenate editorDataChunks and return it to client
                             return;
@@ -273,11 +279,17 @@ module.exports = {
                         }
                         else {
                             // documents may consist of many chunks, search again by using epoch time and combine them
-                            that.models[username].find({epochTime: docs[0].epochTime, "dataType":"editor"}).sort({dataIndex: 1}).exec(function(err, docs){
+                            that.models[username].find({epochTime: docs[0].epochTime, "dataType":"editor"}).exec(function(err, docs){
+                                // not using sort here, to avoid hit the mongo sort memory limit
                                 let editorDataChunkNum = docs.length;
                                 let editorDataChunks = new Array(editorDataChunkNum);
                                 for (let i = 0; i < editorDataChunkNum; i++){
-                                    editorDataChunks[i] = docs[i].data;
+                                    for (let j = 0; j < editorDataChunkNum; j++){
+                                        if (docs[j]["dataIndex"] === i){
+                                            editorDataChunks[i] = docs[i].data;
+                                            break;
+                                        }
+                                    }
                                 }
                                 successCallBack(editorDataChunks.join("")); // Concatenate editorDataChunks and return it to client
                                 return;
