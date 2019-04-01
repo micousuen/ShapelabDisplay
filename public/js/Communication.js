@@ -247,6 +247,12 @@ Communication.prototype = {
                 return undefined;
         }
     },
+    colorToColorlist: function(colorInt){
+        if (! isNaN(colorInt)){
+            let result = [];
+            result.push()
+        }
+    },
     addGeometryObjects: function(modelFile){
         let that = this;
         if ((! "geometryType" in modelFile) || (! "geometryData" in modelFile)){
@@ -265,8 +271,8 @@ Communication.prototype = {
             return true;
         }
 
-        let container=null, vd=null, material=null, geometry=null, vertices=null;
-        let defaultLineColor = 0x000000;
+        let container=null, vd=null, material=null, geometry=null, vertices=null, colors=null;
+        let lineColor = 0x000000;
         switch (true){
             case ["lines", "lineSegments", "lineSegmentPairs"].includes(modelFile["geometryType"]):
                 // Validation checking
@@ -278,25 +284,99 @@ Communication.prototype = {
                 // Create line geometry between consecutive pair of vertices, won't draw from last point to first point
                 geometry = new THREE.BufferGeometry();
                 vertices = [];
-                for (let index in vd){
+                colors = [];
+                for (let index=0; index < vd.length; index++){
                     switch(modelFile["geometryType"]){
                         case "lines":
+                            vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            // If line gradient color given, then use this color
+                            if (Array.isArray(modelFile["color"])){
+                                if (modelFile["color"].length === 2){
+                                    let c0 = new THREE.Color();
+                                    c0.set(modelFile["color"][0]);
+                                    let c1 = new THREE.Color();
+                                    c1.set(modelFile["color"][1]);
+                                    let colorDiff = [c1.r-c0.r, c1.g-c0.g, c1.b-c0.b].map(x => x / (vd.length - 1));
+                                    colors.push(c0.r+colorDiff[0]*index, c0.g+colorDiff[1]*index, c0.b+colorDiff[2]*index);
+                                }
+                                else if (modelFile["color"].length === vd.length){
+                                    let pc = new THREE.Color();
+                                    pc.set(modelFile["color"][index]);
+                                    colors.push(pc.r, pc.g, pc.b);
+                                }
+                            }
+                            break;
                         case "lineSegments":
                             vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            // If line gradient color given, then use this color
+                            if (Array.isArray(modelFile["color"])){
+                                if (modelFile["color"].length === 2){
+                                    if (index + 1 < vd.length) {
+                                        vertices.push(vd[index + 1][0], vd[index + 1][1], typeof (vd[index + 1][2]) !== "undefined" ? vd[index][2] : 0);
+                                        let p0c = new THREE.Color(), p1c = new THREE.Color();
+                                        p0c.set(modelFile["color"][0]);
+                                        p1c.set(modelFile["color"][1]);
+                                        colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
+                                    }
+                                    else{
+                                        let p1c = new THREE.Color();
+                                        p1c.set(modelFile["color"][1]);
+                                        colors.push(p1c.r, p1c.g, p1c.b);
+                                    }
+                                }
+                                else if (modelFile["color"].length === vd.length){
+                                    let pc = new THREE.Color();
+                                    pc.set(modelFile["color"][index]);
+                                    colors.push(pc.r, pc.g, pc.b);
+                                }
+                            }
                             break;
                         case "lineSegmentPairs":
                             vertices.push(vd[index][0][0], vd[index][0][1], typeof(vd[index][0][2]) !== "undefined" ? vd[index][0][2] : 0);
                             vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
+                            // If line gradient color given, then use this color
+                            if (Array.isArray(modelFile["color"])){
+                                if (modelFile["color"].length === 2){
+                                    let p0c = new THREE.Color(), p1c = new THREE.Color();
+                                    p0c.set(modelFile["color"][0]);
+                                    p1c.set(modelFile["color"][1]);
+                                    colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
+                                }
+                                else if (modelFile["color"].length === vd.length){
+                                    if (Array.isArray(modelFile["color"][index])){
+                                        let p0c = new THREE.Color();
+                                        p0c.set(modelFile["color"][index][0]);
+                                        let p1c = new THREE.Color();
+                                        p1c.set(modelFile["color"][index][1]);
+                                        colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
+                                    }
+                                }
+                                else if (modelFile["color"].length === vd.length * 2){
+                                    let p0c = new THREE.Color();
+                                    p0c.set(modelFile["color"][index*2]);
+                                    let p1c = new THREE.Color();
+                                    p1c.set(modelFile["color"][index*2 + 1]);
+                                    colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
+                                }
+                            }
                             break;
                     }
                 }
                 geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+                if (colors.length === vertices.length){
+                    geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                }
 
                 // Set up Line Color and material
                 if ("color" in modelFile){
-                    defaultLineColor = modelFile["color"];
+                    if (! isNaN(modelFile["color"])){
+                        lineColor = modelFile["color"];
+                        material = new THREE.LineBasicMaterial({color: lineColor});
+                    }
+                    else{
+                        material = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors });
+                    }
                 }
-                material = new THREE.LineBasicMaterial({color: defaultLineColor});
 
 
                 // Create container for lines
