@@ -38,7 +38,6 @@ lines_dict = {"geometryType": "lines", \
 linesegs_dict = {"geometryType": "lineSegments", \
 				 "geometryName": "lines", \
 				 "geometryData": [[0, 0, 1],[10, 10, 1],[10, 0, 1], [0, 10, 1]],\
-				 "color": 0x00ff00, \
 				 "configuration": [{"rotateX": 1}, {"rotateY": 1}, {"rotateZ": 1}, {"translate": [0, 0, 0]}],\
 				 "username": "admin", \
 				 "password": "admin"}

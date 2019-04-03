@@ -1,6 +1,10 @@
 const username = "admin";
 const password = "admin";
 
+const DEFAULT_LINE_COLOR = 0x000000;
+const DEFAULT_MESH_COLOR = 0xff5500;
+const DEFAULT_POINT_COLOR = 0xff0000;
+
 var Communication = function(){
 };
 
@@ -272,13 +276,16 @@ Communication.prototype = {
         }
 
         let container=null, vd=null, material=null, geometry=null, vertices=null, colors=null;
-        let lineColor = 0x000000;
         switch (true){
             case ["lines", "lineSegments", "lineSegmentPairs"].includes(modelFile["geometryType"]):
                 // Validation checking
                 vd = modelFile["geometryData"];
                 if (! geometryDataValidation(vd)){
                     return undefined;
+                }
+                if (! "color" in modelFile){
+                    // Default line color
+                    modelFile["color"] = DEFAULT_LINE_COLOR;
                 }
 
                 // Create line geometry between consecutive pair of vertices, won't draw from last point to first point
@@ -368,14 +375,11 @@ Communication.prototype = {
                 }
 
                 // Set up Line Color and material
-                if ("color" in modelFile){
-                    if (! isNaN(modelFile["color"])){
-                        lineColor = modelFile["color"];
-                        material = new THREE.LineBasicMaterial({color: lineColor});
-                    }
-                    else{
-                        material = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors });
-                    }
+                if (! isNaN(modelFile["color"])){
+                    material = new THREE.LineBasicMaterial({color: modelFile["color"]});
+                }
+                else{
+                    material = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors });
                 }
 
 
@@ -396,6 +400,183 @@ Communication.prototype = {
                 else{
                     container.name = modelFile["geometryType"];
                 }
+
+                // If configuration exist, set model to that configuration
+                if ("configuration" in modelFile) {
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+
+                return container;
+                break;
+            case ["triangles", "triangleOnesides", "trianglePairs"].includes(modelFile["geometryType"]):
+                // Validation checking
+                vd = modelFile["geometryData"];
+                if ((! geometryDataValidation(vd))){
+                    return undefined;
+                }
+                if (! "color" in modelFile){
+                    // Default color if color field missing
+                    modelFile["color"] = DEFAULT_MESH_COLOR;
+                }
+
+                // Create triangles
+                geometry = new THREE.BufferGeometry();
+                vertices = [];
+                colors = [];
+                // Set up triangle position and vertex color
+                switch (modelFile["geometryType"]){
+                    case "triangles":
+                        for (let index = 0; index < vd.length ; index++){
+                            vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            if (! isNaN(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length == 3){
+                                let p0c = new THREE.Color();
+                                p0c.set(modelFile["color"][index % 3]);
+                                colors.push(p0c.r, p0c.g, p0c.b);
+                            }
+                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length == vd.length){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                            else if (Array.isArray(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index % modelFile["color"].length]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                            // if (index % 3 === 2){
+                            //     vertices.push(...vertices.slice((index-2)*3, (index-2)*3+3));
+                            //     vertices.push(...vertices.slice((index-0)*3, (index-0)*3+3));
+                            //     vertices.push(...vertices.slice((index-1)*3, (index-1)*3+3));
+                            //     colors.push(...colors.slice((index-2)*3, (index-2)*3+3));
+                            //     colors.push(...colors.slice((index-0)*3, (index-0)*3+3));
+                            //     colors.push(...colors.slice((index-1)*3, (index-1)*3+3));
+                            // }
+                        }
+                        break;
+                    case "triangleOnesides":
+                        for (let index = 0; index < vd.length ; index++){
+                            vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            if (! isNaN(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === 3){
+                                let p0c = new THREE.Color();
+                                p0c.set(modelFile["color"][index % 3]);
+                                colors.push(p0c.r, p0c.g, p0c.b);
+                            }
+                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === vd.length){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                            else if (Array.isArray(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index % modelFile["color"].length]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                        }
+                        break;
+                    case "trianglePairs":
+                        for (let index=0; index < vd.length; index++){
+                            vertices.push(vd[index][0][0], vd[index][0][1], typeof(vd[index][0][2]) !== "undefined" ? vd[index][0][2] : 0);
+                            vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
+                            vertices.push(vd[index][2][0], vd[index][2][1], typeof(vd[index][2][2]) !== "undefined" ? vd[index][2][2] : 0);
+                            // vertices.push(vd[index][0][0], vd[index][0][1], typeof(vd[index][0][2]) !== "undefined" ? vd[index][0][2] : 0);
+                            // vertices.push(vd[index][2][0], vd[index][2][1], typeof(vd[index][2][2]) !== "undefined" ? vd[index][2][2] : 0);
+                            // vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
+                            if (! isNaN(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"]);
+                                let c = [pc.r, pc.g, pc.b];
+                                colors.push(...c, ...c, ...c);
+                                // colors.push(...c, ...c, ...c);
+                            }
+                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === 3){
+                                let p0c = new THREE.Color(), p1c = new THREE.Color(), p2c = new THREE.Color();
+                                p0c.set(modelFile["color"][0]); let p0cA = [p0c.r, p0c.g, p0c.b];
+                                p1c.set(modelFile["color"][1]); let p1cA = [p1c.r, p1c.g, p1c.b];
+                                p2c.set(modelFile["color"][2]); let p2cA = [p2c.r, p2c.g, p2c.b];
+                                colors.push(...p0cA, ...p1cA, ...p2cA);
+                                // colors.push(...p0cA, ...p2cA, ...p1cA);
+                            }
+                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === vd.length){
+                                if (! Array.isArray(modelFile["color"][index])){
+                                    console.log("Error: Incorrect color format, use default black");
+                                    let pc = new THREE.Color();
+                                    pc.set(0x000000);
+                                    let c = [pc.r, pc.g, pc.b];
+                                    colors.push(...c, ...c, ...c, ...c, ...c, ...c);
+                                }
+                                let p0c = new THREE.Color(), p1c = new THREE.Color(), p2c = new THREE.Color();
+                                p0c.set(modelFile["color"][index][0]); let p0cA = [p0c.r, p0c.g, p0c.b];
+                                p1c.set(modelFile["color"][index][1]); let p1cA = [p1c.r, p1c.g, p1c.b];
+                                p2c.set(modelFile["color"][index][2]); let p2cA = [p2c.r, p2c.g, p2c.b];
+                                colors.push(...p0cA, ...p1cA, ...p2cA);
+                                // colors.push(...p0cA, ...p2cA, ...p1cA);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                if ("opacity" in modelFile && (! isNaN(modelFile["opacity"]))){
+                    material = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors, side: THREE.DoubleSide, transparent: true, opacity: modelFile["opacity"]});
+                }
+                else {
+                    material = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors, side: THREE.DoubleSide});
+                }
+
+                container = new THREE.Mesh(geometry, material);
+
+                // Set up name
+                if ("geometryName" in modelFile){
+                    container.name = modelFile["geometryName"];
+                }
+                else{
+                    container.name = modelFile["geometryType"];
+                }
+
+                // If configuration exist, set model to that configuration
+                if ("configuration" in modelFile) {
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+
+                return container;
+
+                break;
+            case ["point"].includes(modelFile["geometryType"]):
+                geometry = new THREE.SphereGeometry(typeof(modelFile["geometryData"][3]) === "undefined" ? 0.1 : modelFile["geometryData"][3], 8, 6);
+                if(! "color" in modelFile){
+                    // Default point color
+                    modelFile["color"] = DEFAULT_POINT_COLOR;
+                }
+
+                // Set up Line Color and material
+                if (! isNaN(modelFile["color"])){
+                    material = new THREE.MeshBasicMaterial({color: modelFile["color"]});
+                }
+                container = new THREE.Mesh(geometry, material);
+
+                // Set up name
+                if ("geometryName" in modelFile){
+                    container.name = modelFile["geometryName"];
+                }
+                else{
+                    container.name = modelFile["geometryType"];
+                }
+
+                // Set up point position
+                container.position.set(modelFile["geometryData"][0], modelFile["geometryData"][1], typeof(modelFile["geometryData"][2]) === "undefined" ? 0 : modelFile["geometryData"][2]);
 
                 // If configuration exist, set model to that configuration
                 if ("configuration" in modelFile) {
