@@ -218,6 +218,7 @@
 
 					communication.loadScene(editor,
 											function(){
+												// If failed to load data from server, load data from local database
 												if (state !== undefined)
 													editor.fromJSON(state);
                                                 var selected = editor.config.getKey( 'selected' );
@@ -226,14 +227,17 @@
                                                 }
 											},
 											function(){
-                                                var selected = editor.config.getKey( 'selected' );
-                                                if ( selected !== undefined ) {
-                                                    editor.selectByUuid( selected );
-                                                }
+												// Succeed in load scene. Start to load latest live update now.
+												var selected = editor.config.getKey( 'selected' );
+												if ( selected !== undefined ) {
+													editor.selectByUuid( selected );
+												}
+												// Load latest live update you first time load this page
+												console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Info: try to load latest live update data");
+												communication.loadLatestLiveupdate(editor,
+																					function(){console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Failed in loading liveupdate");},
+																					function(){});
 											});  // Load state from server first, if failed then load from local database
-					// Load latest live update you first time load this page
-					console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Info: try to load latest live update data");
-					communication.loadLatestLiveupdate(editor);
 				} );
 
 				//
