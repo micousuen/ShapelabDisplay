@@ -55,61 +55,69 @@ point3_dict = {"geometryType": "point", \
 					 "password": "admin"}
 point3_line = {"geometryType": "lineSegments", \
 					 "geometryName": "point_line", \
-					 "geometryData": [[-2, 8, 8], [3, 3, 8]],\
+					 "geometryData": [[-2, 8, 8], [3, 3, 0]],\
 					 "color": 0xff0000, \
 					 "username": "admin", \
 					 "password": "admin"}
-point3_line_perpendicular = {"geometryType": "lines", \
-					 "geometryName": "point_line", \
-					 "geometryData": [[0, 0, 8], [10, 10, 8], [10, 0, 8], [0, 0, 8]],\
+point4_dict = {"geometryType": "point", \
+					 "geometryName": "point", \
+					 "geometryData": [7, 3, 8],\
 					 "color": 0xff0000, \
 					 "username": "admin", \
 					 "password": "admin"}
-point3_line_perpendicular_triangle = {"geometryType": "triangles", \
+point4_line = {"geometryType": "lineSegments", \
 					 "geometryName": "point_line", \
-					 "geometryData": [[0, 0, 8], [10, 10, 8], [10, 0, 8]],\
-					 "color": 0xffffff, \
+					 "geometryData": [[7, 3, 8], [7, 3, 0]],\
+					 "color": 0xff0000, \
 					 "username": "admin", \
 					 "password": "admin"}
 front_face = {"geometryType": "triangles", \
 			  "geometryData": [[0, 0, 0],[10, 10, 0],[10, 0, 0]], \
 			  "color": 0x5500ff, \
+			  "opacity": 0.8, 
 			  "username": "admin", \
 			  "password": "admin"}
 triangle_mesh = {"geometryType": "triangles", \
 					 "geometryName": "Triangle Prism", \
-					 "geometryData": [[0, 0, 0],[0, 0, 20], [10, 0, 0], \
-									  [0, 0, 20], [10, 0, 0], [10, 0, 20], \
-									  [10, 0, 20], [10, 0, 0], [10, 10, 0], \
-									  [10, 10, 0], [10, 0, 20], [10, 10, 20], \
-									  [0, 0, 0], [0, 0, 20], [10, 10, 0], \
-									  [10, 10, 0], [0, 0, 20], [10, 10, 20]],
+					 "geometryData": [[10, 0, 50], [10, 0, 0], [10, 10, 0], \
+									  [10, 10, 0], [10, 0, 50], [10, 10, 50], \
+									  [0, 0, 0], [0, 0, 50], [10, 10, 0], \
+									  [10, 10, 0], [0, 0, 50], [10, 10, 50]],
 					 "color": 0x5500ff, \
-					 "opacity": 0.95, \
+					 "opacity": 0.9, \
+					 "username": "admin", \
+					 "password": "admin"}
+triangle_mesh_bot = {"geometryType": "triangles", \
+					 "geometryName": "Triangle Prism", \
+					 "geometryData": [[0, 0, 0],[0, 0, 50], [10, 0, 0], \
+									  [0, 0, 50], [10, 0, 0], [10, 0, 50]],
+					 "color": 0x5500ff, \
+					 "opacity": 0.90, \
 					 "username": "admin", \
 					 "password": "admin"}
 transparent_mesh = {"geometryType": "triangles", \
 					 "geometryName": "Triangle Prism", \
-					 "geometryData": [[0, 0, 0],[0, 0, -20], [10, 0, 0], \
-									  [0, 0, -20], [10, 0, 0], [10, 0, -20], \
-									  [10, 0, -20], [10, 0, 0], [10, 10, 0], \
-									  [10, 10, -20], [10, 10, 0], [10, 0, -20], \
-									  [0, 0, 0], [0, 0, -20], [10, 10, 0], \
-									  [10, 10, 0], [0, 0, -20], [10, 10, -20]],
+					 "geometryData": [[0, 0, 0],[0, 0, -50], [10, 0, 0], \
+									  [0, 0, -50], [10, 0, 0], [10, 0, -50], \
+									  [10, 0, -50], [10, 0, 0], [10, 10, 0], \
+									  [10, 10, -50], [10, 10, 0], [10, 0, -50], \
+									  [0, 0, 0], [0, 0, -50], [10, 10, 0], \
+									  [10, 10, 0], [0, 0, -50], [10, 10, -50]],
 					 "color": 0x888888, \
 					 "opacity": 0.6, \
 					 "username": "admin", \
 					 "password": "admin"}
 half_space_plane = {"geometryType": "triangles", \
 					 "geometryName": "half space", \
-					 "geometryData": [[-100, -100, -0.01],[100, 100, -0.01], [-100, 100, -0.01], \
-									  [100, -100, -0.01], [100, 100, -0.01], [-100, -100, -0.01]],
-					 "color": 0xffff00, \
+					 "geometryData": [[-100, -100, -0.02],[100, 100, -0.02], [-100, 100, -0.02], \
+									  [100, -100, -0.02], [100, 100, -0.02], [-100, -100, -0.02]],
+					 "color": 0xeeff00, \
 					 "opacity": 0.4, \
 					 "username": "admin", \
 					 "password": "admin"}
 
 dataString = json.dumps([triangle_mesh, \
+						 triangle_mesh_bot, \
 						 front_face, \
 						 point_dict, \
 						 point_line, \
@@ -117,8 +125,8 @@ dataString = json.dumps([triangle_mesh, \
 						 point2_line, \
 						 point3_dict, \
 						 point3_line, \
-						 point3_line_perpendicular, \
-						 point3_line_perpendicular_triangle, \
+						 point4_dict, \
+						 point4_line, \
 						 half_space_plane, \
 						 transparent_mesh], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
