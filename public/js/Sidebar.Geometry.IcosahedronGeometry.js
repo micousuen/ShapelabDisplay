@@ -33,6 +33,7 @@ Sidebar.Geometry.IcosahedronGeometry = function ( editor, object ) {
 
 	container.add( detailRow );
 
+
 	//
 
 	function update() {

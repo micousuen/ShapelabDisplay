@@ -1,0 +1,13 @@
+{
+  "short_name": "ShapelabDisplay",
+  "name": "Shapelab Display",
+  "icons": [
+    {
+      "src": "./favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone"
+}
