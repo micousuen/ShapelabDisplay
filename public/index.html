@@ -4,18 +4,17 @@
 		<title>onlineEditor</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<!-- Origin Trial Token, feature = WebXR Device API (For Chrome M69+), origin = https://threejs.org, expires = 2019-01-07 -->
-		<meta http-equiv="origin-trial" data-feature="WebXR Device API (For Chrome M69+)" data-expires="2019-01-07" content="ArPzyYNrUDiXsGOh647Ya7MtVUA1nM+WFMnPWu7eoF2nQHOP6mTATIbiv0w+k2kFaPofZG/04ZEQdsACq4IA0wQAAABTeyJvcmlnaW4iOiJodHRwczovL3RocmVlanMub3JnOjQ0MyIsImZlYXR1cmUiOiJXZWJYUkRldmljZU02OSIsImV4cGlyeSI6MTU0Njg4MzAxOH0=">
-		<!-- Origin Trial Token, feature = WebXR Gamepad Support, origin = https://threejs.org, expires = 2019-01-07 -->
-		<meta http-equiv="origin-trial" data-feature="WebXR Gamepad Support" data-expires="2019-01-07" content="Av16a8LVXasKVQV9j3u0OlXdTfz5O9qDqhROyL5Up6R3sdOPbtFuc6n6o5DHitwnb5VdirH0GyvROwvz8xxd0AkAAABYeyJvcmlnaW4iOiJodHRwczovL3RocmVlanMub3JnOjQ0MyIsImZlYXR1cmUiOiJXZWJYUkdhbWVwYWRTdXBwb3J0IiwiZXhwaXJ5IjoxNTQ2ODgzMDE4fQ==">
+		<link rel="manifest" href="manifest.json">
 	</head>
 	<body ontouchstart="">
-		<link href="css/main.css" rel="stylesheet" />
-		<link id="theme" href="css/light.css" rel="stylesheet" />
-		<script src="./js/libs/jquery-3.3.1.min.js"></script>
-		<script src="./js/libs/threejs/build/three.js"></script>
-		<script src="/socket.io/socket.io.js"></script>
+		<link rel="stylesheet" href="css/main.css">
+		<link rel="stylesheet" id="theme" href="css/light.css">
+		
+		
+		<script src="./js/libs/jquery-3.3.1.min.js"></script> <!-- For convenience -->
+		<script src="/socket.io/socket.io.js"></script> <!-- For live update and communication with server -->
 		<script src="js/libs/whammy.js"></script> <!-- For animation recording -->
+		<script src="./js/libs/threejs/build/three.js"></script>
 		<script src="./js/libs/threejs/examples/js/libs/system.min.js"></script>
 
 		<script src="./js/libs/threejs/examples/js/controls/EditorControls.js"></script>
@@ -90,6 +89,9 @@
 		<script src="js/libs/ui.js"></script>
 		<script src="js/libs/ui.three.js"></script>
 
+		<script src="js/libs/html2canvas.js"></script>
+		<script src="js/libs/three.html.js"></script>
+
 		<script src="js/libs/app.js"></script>
 		<script src="js/Player.js"></script>
 		<script src="js/Script.js"></script>
@@ -132,6 +134,7 @@
 		<script src="js/Sidebar.Geometry.SphereGeometry.js"></script>
 		<script src="js/Sidebar.Geometry.TorusGeometry.js"></script>
 		<script src="js/Sidebar.Geometry.TorusKnotGeometry.js"></script>
+		<script src="js/Sidebar.Geometry.TubeGeometry.js"></script>
 		<script src="./js/libs/threejs/examples/js/geometries/TeapotBufferGeometry.js"></script>
 		<script src="js/Sidebar.Geometry.TeapotBufferGeometry.js"></script>
 		<script src="js/Sidebar.Geometry.LatheGeometry.js"></script>
@@ -142,6 +145,7 @@
 		<script src="js/Strings.js"></script>
 		<script src="js/Toolbar.js"></script>
 		<script src="js/Viewport.js"></script>
+		<script src="js/Viewport.Camera.js"></script>
 		<script src="js/Viewport.Info.js"></script>
 
 		<script src="js/Command.js"></script>
@@ -165,9 +169,6 @@
 		<script src="js/commands/SetMaterialColorCommand.js"></script>
 		<script src="js/commands/SetMaterialMapCommand.js"></script>
 		<script src="js/commands/SetSceneCommand.js"></script>
-
-		<script src="js/libs/html2canvas.js"></script>
-		<script src="js/libs/three.html.js"></script>
 
 		<script>
 
@@ -367,6 +368,20 @@
 					} );
 
 					isLoadingFromHash = true;
+
+				}
+
+			}
+
+			// ServiceWorker
+
+			if ( 'serviceWorker' in navigator ) {
+
+				try {
+
+					navigator.serviceWorker.register( 'sw.js' );
+
+				} catch ( error ) {
 
 				}
 
