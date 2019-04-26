@@ -51,6 +51,7 @@ var Strings = function ( config ) {
 			'menubar/add/hemispherelight': 'HemisphereLight',
 			'menubar/add/ambientlight': 'AmbientLight',
 			'menubar/add/perspectivecamera': 'PerspectiveCamera',
+			'menubar/add/arrow': 'Arrow',
 
 			'menubar/status/autosave': 'autosave',
 
@@ -313,6 +314,7 @@ var Strings = function ( config ) {
 			'menubar/add/hemispherelight': '半球光',
 			'menubar/add/ambientlight': '环境光',
 			'menubar/add/perspectivecamera': '透视相机',
+			'menubar/add/arrow': '箭头',
 
 			'menubar/status/autosave': '自动保存',
 

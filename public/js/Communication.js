@@ -152,7 +152,7 @@ Communication.prototype = {
     processFileEntryUpdate: function(editor, data, callBack){
         let that = this;
         let modelFiles = undefined;
-        wrappedContainer = new THREE.Group();
+        let wrappedContainer = new THREE.Group();
         wrappedContainer.name = editor.config.getKey("settings/liveupdate/defaultGroupName");
 
         // Parse fileEntryModel
