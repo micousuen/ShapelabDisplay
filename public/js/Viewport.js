@@ -305,6 +305,7 @@ var Viewport = function ( editor ) {
 		let imgData;
 		imgData = renderer.domElement.toDataURL("image/png");
 		imgData = imgData.replace("image/png", "image/octet-stream");
+		// Toggle download action
 		let download = document.getElementById("imageDownload");
 		download.setAttribute('download', 'CanvasScreenShot.png');
 		download.setAttribute('href', imgData);
