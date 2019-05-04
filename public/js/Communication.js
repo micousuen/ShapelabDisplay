@@ -251,12 +251,6 @@ Communication.prototype = {
                 return undefined;
         }
     },
-    colorToColorlist: function(colorInt){
-        if (! isNaN(colorInt)){
-            let result = [];
-            result.push()
-        }
-    },
     addGeometryObjects: function(modelFile){
         let that = this;
         if ((! "geometryType" in modelFile) || (! "geometryData" in modelFile)){
