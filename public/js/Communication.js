@@ -585,6 +585,85 @@ Communication.prototype = {
 
                 return container;
                 break;
+            case ["polygon"].includes(modelFile["geometryType"]):
+                let temp_geometry = new THREE.Geometry();
+                vertices = [];
+                let holes = [];
+                if(! "color" in modelFile){
+                    // Default point color
+                    modelFile["color"] = DEFAULT_MESH_COLOR;
+                }
+
+                if ("geometryData" in modelFile){
+                    let polygonData = modelFile["geometryData"];
+                    for (let p_index in polygonData){
+                        // Only 2D data will be allowed to push into vertices.
+                        // If we have 3D data, then check if they are on same plane, and apply rotation to make it lie on xy plane
+                        if(polygonData[p_index].length === 2){
+                            vertices.push(new THREE.Vector2(polygonData[p_index][0], polygonData[p_index][1]));
+                            temp_geometry.vertices.push(new THREE.Vector3(polygonData[p_index][0], polygonData[p_index][1], 0));
+                        }
+                    }
+                }
+                // holes part not finished, need to learn more about holes type.
+                // if ("holes" in modelFile){
+                //     let holesData = modelFile["holes"];
+                //     for (let p_index in holesData){
+                //         // Only 2D data will be allowed to push into holes.
+                //         // If we have 3D data, then check if they are on same plane, and apply rotation to make it lie on xy plane
+                //         if(holesData[p_index].length === 2){
+                //             holes.push(new THREE.Vector2(holesData[p_index][0], holesData[p_index][1]));
+                //         }
+                //     }
+                // }
+
+                let triangle_faces = THREE.ShapeUtils.triangulateShape(vertices, holes);
+                for (let i = 0 ; i < triangle_faces.length; i++){
+                    // Set up vertices positions
+                    let face = new THREE.Face3(triangle_faces[i][0], triangle_faces[i][1], triangle_faces[i][2]);
+                    // Set up vertices colors
+                    if( ! isNaN(modelFile["color"])){
+                        let pc = new THREE.Color();
+                        pc.set(modelFile["color"]);
+                        face.vertexColors = [pc, pc, pc];
+                    }
+                    else {
+                        let pc1 = new THREE.Color(), pc2 = new THREE.Color(), pc3 = new THREE.Color();
+                        pc1.set(modelFile["color"][triangle_faces[i][0] % modelFile["color"].length]);
+                        pc2.set(modelFile["color"][triangle_faces[i][1] % modelFile["color"].length]);
+                        pc3.set(modelFile["color"][triangle_faces[i][2] % modelFile["color"].length]);
+                        face.vertexColors = [pc1, pc2, pc3];
+                    }
+                    // Add face to geometry
+                    temp_geometry.faces.push(face);
+                }
+
+                if ("opacity" in modelFile && (! isNaN(modelFile["opacity"]))){
+                    material = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors, side: THREE.DoubleSide, transparent: true, opacity: modelFile["opacity"]});
+                }
+                else {
+                    material = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors, side: THREE.DoubleSide});
+                }
+
+                geometry = new THREE.BufferGeometry().fromGeometry(temp_geometry);
+
+                container = new THREE.Mesh(geometry, material);
+
+                // Set up name
+                if ("geometryName" in modelFile){
+                    container.name = modelFile["geometryName"];
+                }
+                else{
+                    container.name = modelFile["geometryType"];
+                }
+
+                // If configuration exist, set model to that configuration
+                if ("configuration" in modelFile) {
+                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                }
+
+                return container;
+                break;
             case true:
             default:
                 console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: GeometryFormat not implemented or wrong data");

@@ -101,6 +101,8 @@ Menubar.Add = function ( editor ) {
 		let bot_mesh = new THREE.Mesh(bot_geometry, new THREE.MeshStandardMaterial({color: 0xff0000}) );
 		bot_mesh.position.y += 0.15;
 		top_mesh.position.y += 0.3;
+		top_mesh.name = "Arrow.top";
+		bot_mesh.name = "Arrow.bottom";
 
 		container.add(top_mesh);
 		container.add(bot_mesh);
