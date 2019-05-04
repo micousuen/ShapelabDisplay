@@ -120,9 +120,9 @@ module.exports = {
                                 },
                                 function(){
                                     // Process message, broadcast everything except username and password to corresponding users. 
-                                    let copied_dict = {}
+                                    let copied_dict = {};
                                     for (let field in ele){
-                                        if (! (field in ["username", "password"])){
+                                        if (! (["username", "password"].includes(field))){
                                             copied_dict[field] = ele[field];
                                         }
                                     }
