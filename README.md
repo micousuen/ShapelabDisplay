@@ -106,7 +106,7 @@ If is "triangleOnesides", then will generate triangles with one side rendering e
 
 If is "trianglePairs", then geometryData should be an array of array in which there should have 3 vertices 3D positions. Render double sides.
 
-If is "polygon", then geometryData should be an array of polygon contour positions in clockwise or counterclockwise order. ONLY 2D points supported now. Will draw polygon by default on x-y plane. 
+If is "polygon", then geometryData should be an array of polygon contour positions in clockwise or counterclockwise order. ONLY 2D points supported now. Will draw polygon by default on x-y plane.
 
 #### TRANSFORMATION_ARRAY
 TRANSOFORMATION_ARRAY is an array contains TRANFORMATION_DICT. Transformation will be applied in order.
