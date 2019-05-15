@@ -3,6 +3,7 @@
  */
 
 var Viewport = function ( editor ) {
+	var that = this;
 
 	var signals = editor.signals;
 
@@ -547,6 +548,24 @@ var Viewport = function ( editor ) {
 		render();
 
 	} );
+
+	// Record Scene
+	signals.StartSceneAnimation.add(function(commandToExecute){
+
+		renderer.setAnimationLoop(function(){
+
+			// Give renderer to commandToExecute and let it use for something
+			if (typeof(commandToExecute) !== "undefined"){
+				commandToExecute(renderer);
+			}
+
+		})
+
+	});
+
+	signals.StopSceneAnimation.add(function(){
+		renderer.setAnimationLoop(null);
+	});
 
 	// animations
 

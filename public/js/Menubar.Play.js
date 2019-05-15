@@ -21,6 +21,26 @@ Menubar.Play = function ( editor ) {
 	options.setClass('options');
 	container.add(options);
 
+	var recordSceneOption = new UI.Row();
+	recordSceneOption.setClass('option');
+	recordSceneOption.setTextContent(strings.getKey('menubar/play/recordScene'));
+	recordSceneOption.onClick(function(){
+		isPlaying = true;
+		title.setTextContent(strings.getKey('menubar/play/stop'));
+		signals.startSceneRecord.dispatch();
+		container.remove(options);
+		title.onClick( function () {
+			if (isPlaying === true) {
+				isPlaying = false;
+				title.setTextContent(strings.getKey('menubar/play/play'));
+				signals.stopSceneRecord.dispatch();
+				container.add(options);
+				title.dom.removeAttribute("onclick")
+			}
+		} );
+	});
+	options.add(recordSceneOption);
+
 	var playOption = new UI.Row();
 	playOption.setClass('option');
 	playOption.setTextContent(strings.getKey('menubar/play/play'));
