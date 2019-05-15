@@ -82,6 +82,7 @@ Communication.prototype = {
         });
     },
     applyTransformToContainer : function(container, transformList){
+        let that = this;
         for (let index in transformList){
             let transformDict = transformList[index];
             if ("translate" in transformDict){
@@ -95,15 +96,17 @@ Communication.prototype = {
                     that.log("Incorrect translate format")
                 }
             }
+            // Order of rotation is controlled by rotation.order, has nothing related to these three orders
             if ("rotateX" in transformDict){
-                container.rotateX(transformDict["rotateX"])
+                container.rotation.x = transformDict["rotateX"];
             }
             if ("rotateY" in transformDict){
-                container.rotateY(transformDict["rotateY"])
+                container.rotation.y = transformDict["rotateY"];
             }
             if ("rotateZ" in transformDict){
-                container.rotateZ(transformDict["rotateZ"])
+                container.rotation.z = transformDict["rotateZ"];
             }
+            container.rotation.order = "ZYX";
         }
         return container
     },
@@ -213,7 +216,7 @@ Communication.prototype = {
                     container = that.applyTransformToContainer(container, modelFile.configuration)
                 }
                 else if ("fileConfiguration" in modelFile){
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                    container = that.applyTransformToContainer(container, modelFile.fileConfiguration)
                 }
 
                 // Set material for all objs
@@ -242,7 +245,7 @@ Communication.prototype = {
                     container = that.applyTransformToContainer(container, modelFile.configuration)
                 }
                 else if ("fileConfiguration" in modelFile){
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                    container = that.applyTransformToContainer(container, modelFile.fileConfiguration)
                 }
                 return container;
                 break;
@@ -596,6 +599,9 @@ Communication.prototype = {
                         if(polygonData[p_index].length === 2){
                             vertices.push(new THREE.Vector2(polygonData[p_index][0], polygonData[p_index][1]));
                             temp_geometry.vertices.push(new THREE.Vector3(polygonData[p_index][0], polygonData[p_index][1], 0));
+                        }
+                        else if (polygonData[p_index].length === 3){
+                            console.log("Polygon 3D not implemented yet. ")
                         }
                     }
                 }

@@ -58,6 +58,7 @@ var Strings = function ( config ) {
 			'menubar/play': 'Play',
 			'menubar/play/stop': 'Stop',
 			'menubar/play/play': 'Play',
+			'menubar/play/recordScene': 'Record Scene',
 			'menubar/play/playAndRecord': 'Play and Record',
 
 			'menubar/examples': 'Examples',
@@ -321,6 +322,7 @@ var Strings = function ( config ) {
 			'menubar/play': '播放',
 			'menubar/play/stop': '暂停',
 			'menubar/play/play': '播放',
+			'menubar/play/recordScene': '录制当前画面',
 			'menubar/play/playAndRecord': '播放并录制',
 
 			'menubar/examples': '示例',

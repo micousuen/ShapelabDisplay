@@ -28,7 +28,11 @@ var Editor = function () {
 
 		startPlayer: new Signal(),
 		startPlayerAndRecord: new Signal(),
+		startSceneRecord: new Signal(),
+		stopSceneRecord: new Signal(),
 		stopPlayer: new Signal(),
+		StartSceneAnimation: new Signal(),
+		StopSceneAnimation: new Signal(),
 
 		// actions
 		showModal: new Signal(),
