@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "prestart": "start mongod --dbpath ./db --bind_ip 127.0.0.1 --auth",
     "start": "node ./bin/server.js",
     "startdocker": "node --max_old_space_size=8196 ./bin/server.js mongo 27017"
   },
