@@ -528,7 +528,7 @@ Editor.prototype = {
 		this.camera.copy( this.DEFAULT_CAMERA );
 		this.scene.name = "Scene";
 		this.scene.userData = {};
-		this.scene.background.setHex( 0xaaaaaa );
+		this.scene.background.setHex( 0x8aacca );
 		this.scene.fog = null;
 
 		var objects = this.scene.children;
