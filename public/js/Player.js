@@ -40,7 +40,7 @@ var Player = function ( editor ) {
 		// Set up scene animation loop. Record current scene at each round, recording speed is around 5 frames/second
 		signals.StartSceneAnimation.dispatch(function(renderer){
 
-			// Function get executed in animationLoop, renderer defined in Viewport. 
+			// Function get executed in animationLoop, renderer defined in Viewport.
 			VideoRecorder.add(renderer.domElement.toDataURL("image/webp"));
 		});
 
