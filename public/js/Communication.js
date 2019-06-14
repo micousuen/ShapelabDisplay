@@ -18,7 +18,7 @@ Communication.prototype = {
         log_strings = new Array(log.length).fill("").map((x, i) => String(log[i]));
         console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', log_strings.join(""))
     },
-    sendStatus: function(editor){
+    sendScene: function(editor){
         var start = performance.now();
         let editorJSONstring = JSON.stringify(editor.toJSON());
         let dataToSend = {
@@ -34,6 +34,31 @@ Communication.prototype = {
                 console.log(result);
             }});
     },
+    loadScene: function(editor, failureCallBack, successCallBack){
+        let that = this;
+        var start = performance.now();
+        var editorRequest = $.ajax({url: "api/load_data/editor", method: "GET",
+            data: {
+                username: username,
+                password: password
+            }});
+        editorRequest.done(function(msg){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load editor data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
+            // Clear editor scene and load editor from result
+            editor.clear();
+            editor.fromJSON(JSON.parse(msg));
+            if (typeof(successCallBack) === "function"){
+                successCallBack();
+            }
+        });
+        editorRequest.fail(function(jqXHR, textStatus){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Cannot load data from server "+textStatus);
+            if (typeof(failureCallBack) === "function"){
+                failureCallBack();
+            }
+        });
+    },
+
     loadLatestLiveupdate: function(editor, failureCallBack, successCallBack){
         let that = this;
         let start = performance.now();
@@ -55,30 +80,6 @@ Communication.prototype = {
             if (typeof(failureCallBack) === "function"){
                 failureCallBack();
             }
-        });
-    },
-    loadScene: function(editor, failureCallBack, successCallBack){
-        let that = this;
-        var start = performance.now();
-        var editorRequest = $.ajax({url: "api/load_data/editor", method: "GET",
-            data: {
-                username: username,
-                password: password
-            }});
-        editorRequest.done(function(msg){
-            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load editor data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
-            // Clear editor scene and load editor from result
-            editor.clear();
-            editor.fromJSON(JSON.parse(msg));
-            if (typeof(successCallBack) === "function"){
-                successCallBack();
-            }
-        });
-        editorRequest.fail(function(jqXHR, textStatus){
-           console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Cannot load data from server "+textStatus);
-           if (typeof(failureCallBack) === "function"){
-               failureCallBack();
-           }
         });
     },
     applyTransformToContainer : function(container, transformList){
@@ -173,7 +174,7 @@ Communication.prototype = {
         // editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName")); // Old version, didn't support history
         let object_to_remove = editor.scene.getObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"));
         if (typeof(object_to_remove) !== "undefined"){
-            editor.execute(new RemoveObjectCommand());
+            editor.execute(new RemoveObjectCommand(object_to_remove));
         }
 
 

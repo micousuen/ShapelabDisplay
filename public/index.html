@@ -280,7 +280,7 @@
 				    timeout = setTimeout(function(){
 				        editor.signals.sendSceneStarted.dispatch();
 				        timeout = setTimeout(function(){
-				            communication.sendStatus( editor );
+				            communication.sendScene( editor );
 				        	editor.signals.sendSceneFinished.dispatch();
 						}, 100);
 					}, 1000);
