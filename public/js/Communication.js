@@ -171,7 +171,10 @@ Communication.prototype = {
 
         // Only one fileEntry allowed in scene, so remove old one if already defined
         // editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName")); // Old version, didn't support history
-        editor.execute(new RemoveObjectCommand(editor.scene.getObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"))));
+        let object_to_remove = editor.scene.getObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"));
+        if (typeof(object_to_remove) !== "undefined"){
+            editor.execute(new RemoveObjectCommand());
+        }
 
 
         // Based on file type (get from fileName), parse it and add to scene
