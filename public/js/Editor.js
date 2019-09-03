@@ -237,21 +237,9 @@ Editor.prototype = {
 
 	},
 
-    removeObjectByName: function(objectName, parentObject){
-	    // Warning: this function will remove all object with this name recursively
-		let that = this;
-		if (typeof(parentObject) === "undefined"){
-			parentObject = this.scene;
-		}
-		parentObject.traverse(function(child){
-			if (child.name === objectName){
-				that.removeHelper(child);
-				parentObject.remove(child);
-				that.signals.objectRemoved.dispatch(child);
-			}
-		});
-
-		this.signals.sceneGraphChanged.dispatch();
+    removeObjectByName: function(objectName){
+		// Under scene, search for first matching object with name objectName, then remove this object from scene
+        this.removeObject(this.scene.getObjectByName(objectName));
     },
 
 	addGeometry: function ( geometry ) {
@@ -540,7 +528,7 @@ Editor.prototype = {
 		this.camera.copy( this.DEFAULT_CAMERA );
 		this.scene.name = "Scene";
 		this.scene.userData = {};
-		this.scene.background.setHex( 0xaaaaaa );
+		this.scene.background.setHex( 0x8aacca );
 		this.scene.fog = null;
 
 		var objects = this.scene.children;
