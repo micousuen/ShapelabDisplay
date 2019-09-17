@@ -230,6 +230,10 @@ Communication.prototype = {
             material_dict["opacity"]=opacity;
             material_dict["transparent"]=true;
         }
+        // For PointsMaterial Only
+        if ("size" in materialSettings){
+            material_dict["size"]=materialSettings["size"];
+        }
 
         // create new material
         if (typeof(material_type) !== "undefined"){
@@ -298,6 +302,7 @@ Communication.prototype = {
             let vd = geometryData;
             for (let index in vd){
                 if (vd[index].length !== 3 && vd[index].length !== 2){
+                    console.log(vd[index]);
                     console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: geometryData error, illegal vertex length");
                     return false;
                 }
@@ -467,6 +472,40 @@ Communication.prototype = {
 
                 container = new THREE.Mesh(geometry, material);
 
+                break;
+            case ["points", "pointCloud"].includes(modelFile["geometryType"]):
+                // Validation checking
+                vd = modelFile["geometryData"];
+                if ((! geometryDataValidation(vd))){
+                    return undefined;
+                }
+
+                geometry = new THREE.BufferGeometry();
+                vertices = [];
+                colors = [];
+                // Create point cloud with color
+                switch (modelFile["geometryType"]){
+                    case "points":
+                    case "pointCloud":
+                        for (let index = 0; index < vd.length; index++){
+                            vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            if (Array.isArray(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index % modelFile["color"].length]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                // Set up Point Color and material
+                material = that.create_material(modelFile, DEFAULT_LINE_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.PointsMaterial);
+
+                container = new THREE.Points(geometry, material);
                 break;
             case ["point"].includes(modelFile["geometryType"]):
                 geometry = new THREE.SphereGeometry(typeof(modelFile["geometryData"][3]) === "undefined" ? 0.1 : modelFile["geometryData"][3], 8, 6);
