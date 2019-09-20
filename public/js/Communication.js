@@ -253,9 +253,6 @@ Communication.prototype = {
 
         let container = null, material=null;
 
-        // Create material for mesh
-        material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, false, THREE.MeshPhongMaterial);
-
         // Load model data based on model type
         switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".") - 1 >>> 0) + 2)) {
             case "obj":
@@ -282,6 +279,33 @@ Communication.prototype = {
         if ("configuration" in modelFile) {
             container = that.applyTransformToContainer(container, modelFile.configuration)
         }
+
+
+        // Set up color for model if color array given and Create material for mesh
+        if (Array.isArray(modelFile["color"])){
+            // Use color array to assign each vertex with a color
+            container.geometry.removeAttribute('color');
+            let num_of_vertex = container.geometry.getAttribute('position').count;
+            let colors = new Float32Array(num_of_vertex * 3);
+            let color_length = modelFile["color"].length;
+            let color_to_add = new THREE.Color();
+            for (let color_index=0; color_index < num_of_vertex; color_index++){
+                color_to_add.set(modelFile["color"][color_index % color_length]);
+                colors[color_index*3] = color_to_add.r;
+                colors[color_index*3+1] = color_to_add.g;
+                colors[color_index*3+2] = color_to_add.b;
+            }
+            container.geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        }
+        if (Array.isArray(modelFile["color"]) ||
+            (typeof(container.geometry.getAttribute('color')) !== "undefined" && container.geometry.getAttribute('color').count === container.geometry.getAttribute('position').count)){
+            // If vertex color given by color array or defined inside model file then have vertex color enabled
+            material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, true, THREE.MeshPhongMaterial);
+        }
+        else{
+            material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, false, THREE.MeshPhongMaterial);
+        }
+
 
         // Set material for all objs
         container.material = material;
