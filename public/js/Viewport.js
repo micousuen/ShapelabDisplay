@@ -303,14 +303,17 @@ var Viewport = function ( editor ) {
 	} );
 
 	signals.saveCanvasEvent.add(function(){
-		let imgData;
-		imgData = renderer.domElement.toDataURL("image/png");
-		imgData = imgData.replace("image/png", "image/octet-stream");
-		// Toggle download action
+		// Prepare download link
 		let download = document.getElementById("imageDownload");
-		download.setAttribute('download', 'CanvasScreenShot.png');
-		download.setAttribute('href', imgData);
-		download.click();
+		download.setAttribute('download', 'CanvasShot_'+ /\d\d\:\d\d\:\d\d/.exec(new Date())[0]+'.png');
+
+		// Turn canvas to a blob first, then download it. In this way, img size won't constraint by browser src length limit
+		renderer.domElement.toBlob(function(blob){
+
+			download.href = URL.createObjectURL(blob);
+			download.click()
+
+		});
 	});
 
 	signals.rendererChanged.add( function ( newRenderer ) {
