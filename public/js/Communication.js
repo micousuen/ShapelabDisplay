@@ -156,8 +156,8 @@ Communication.prototype = {
     processFileEntryUpdate: function(editor, data, callBack){
         let that = this;
         let modelFiles = undefined;
+        let groupName = editor.config.getKey("settings/liveupdate/defaultGroupName");
         let wrappedContainer = new THREE.Group();
-        wrappedContainer.name = editor.config.getKey("settings/liveupdate/defaultGroupName");
 
         // Parse fileEntryModel
         try{
@@ -169,15 +169,6 @@ Communication.prototype = {
             throw "Error!";
         }
 
-
-        // Only one fileEntry allowed in scene, so remove old one if already defined
-        // editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName")); // Old version, didn't support history
-        let object_to_remove = editor.scene.getObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"));
-        if (typeof(object_to_remove) !== "undefined"){
-            editor.execute(new RemoveObjectCommand(object_to_remove));
-        }
-
-
         // Based on file type (get from fileName), parse it and add to scene
         for (let modelFileIndex in modelFiles){
             let modelFile = modelFiles[modelFileIndex];
@@ -187,13 +178,27 @@ Communication.prototype = {
                     wrappedContainer.add(container);
                 }
             }
-            if ("fileName" in modelFile) {
+            else if ("fileName" in modelFile) {
                 let container = that.addModelFile(modelFile);
                 if (typeof(container) !== "undefined"){
                     wrappedContainer.add(container);
                 }
             }
+            else if ("GroupProperties" in modelFile){
+                if ("GroupName" in modelFile["GroupProperties"]){
+                    groupName = modelFile["GroupProperties"]["GroupName"];
+                }
+            }
         }
+
+        wrappedContainer.name = groupName;
+        // Only one group name allowed in scene, so remove old one if already defined
+        // editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName")); // Old version, didn't support history
+        let object_to_remove = editor.scene.getObjectByName(groupName);
+        if (typeof(object_to_remove) !== "undefined"){
+            editor.execute(new RemoveObjectCommand(object_to_remove));
+        }
+
         // Add wrappedContainer to scene
         that.fileEntryContainer = wrappedContainer;
         editor.execute(new AddObjectCommand(wrappedContainer));
@@ -226,7 +231,9 @@ Communication.prototype = {
         else{
             material_dict["color"]=gcolor;
         }
-        if ("opacity" in materialSettings && (! isNaN(materialSettings["opacity"]))) {
+
+        // Set transparent if opacity is smaller than 1.0
+        if ("opacity" in materialSettings && (! isNaN(materialSettings["opacity"])) && materialSettings["opacity"] < 1.0) {
             material_dict["opacity"]=opacity;
             material_dict["transparent"]=true;
         }
@@ -251,14 +258,24 @@ Communication.prototype = {
             return undefined;
         }
 
-        let container = null, material=null;
+        let material = null, containers = null, return_container = null;
 
         // Load model data based on model type
         switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".") - 1 >>> 0) + 2)) {
             case "obj":
                 // Load model to container
-                container = new THREE.OBJLoader().parse(modelFile.fileData);
-                container.name = modelFile.fileName;
+                containers = new THREE.OBJLoader().parse(modelFile.fileData).children;
+                let file_basename = modelFile.fileName.slice(0, (modelFile.fileName.lastIndexOf(".") - 1 >>> 0) + 1);
+
+                // If more than one part exist, then set part name for it
+                if (containers.length > 1) {
+                    for (let i = 1; i <= containers.length; i++) {
+                        containers[i].name = file_basename + "_part" + i.toString() + ".obj"
+                    }
+                }
+                else{
+                    containers[0].name = modelFile.fileName;
+                }
                 break;
             case "ply":
                 // Load model to container
@@ -267,53 +284,65 @@ Communication.prototype = {
 
                 // Set up geometry and compute normals for display
                 geometry.computeVertexNormals();
-                container = new THREE.Mesh(geometry, material);
+                containers = [new THREE.Mesh(geometry, material)];
                 console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Info: cost: ", new Date().getTime() - loadTimeBefore, " ms in loading PLY model");
-                container.name = modelFile.fileName;
+                containers[0].name = modelFile.fileName;
                 break;
             default:
                 console.log("Error: fileEntryFormat not implemented or wrong data");
                 return undefined;
         }
-        // If configuration exist, set model to that configuration
-        if ("configuration" in modelFile) {
-            container = that.applyTransformToContainer(container, modelFile.configuration)
-        }
 
+        for (let container_index in containers) {
+            let container = containers[container_index];
 
-        // Set up color for model if color array given and Create material for mesh
-        if (Array.isArray(modelFile["color"])){
-            // Use color array to assign each vertex with a color
-            container.geometry.removeAttribute('color');
-            let num_of_vertex = container.geometry.getAttribute('position').count;
-            let colors = new Float32Array(num_of_vertex * 3);
-            let color_length = modelFile["color"].length;
-            let color_to_add = new THREE.Color();
-            for (let color_index=0; color_index < num_of_vertex; color_index++){
-                color_to_add.set(modelFile["color"][color_index % color_length]);
-                colors[color_index*3] = color_to_add.r;
-                colors[color_index*3+1] = color_to_add.g;
-                colors[color_index*3+2] = color_to_add.b;
+            // If configuration exist, set model to that configuration
+            if ("configuration" in modelFile) {
+                container = that.applyTransformToContainer(container, modelFile.configuration)
             }
-            container.geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+
+            // Set up color for model if color array given and Create material for mesh
+            if (Array.isArray(modelFile["color"])) {
+                // Use color array to assign each vertex with a color
+                container.geometry.removeAttribute('color');
+                let num_of_vertex = container.geometry.getAttribute('position').count;
+                let colors = new Float32Array(num_of_vertex * 3);
+                let color_length = modelFile["color"].length;
+                let color_to_add = new THREE.Color();
+                for (let color_index = 0; color_index < num_of_vertex; color_index++) {
+                    color_to_add.set(modelFile["color"][color_index % color_length]);
+                    colors[color_index * 3] = color_to_add.r;
+                    colors[color_index * 3 + 1] = color_to_add.g;
+                    colors[color_index * 3 + 2] = color_to_add.b;
+                }
+                container.geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            }
+            if (Array.isArray(modelFile["color"]) ||
+                (typeof (container.geometry) !== "undefined" && (typeof (container.geometry.getAttribute('color')) !== "undefined" && container.geometry.getAttribute('color').count === container.geometry.getAttribute('position').count))) {
+                // If vertex color given by color array or defined inside model file then have vertex color enabled
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, true, THREE.MeshPhongMaterial);
+            } else {
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, false, THREE.MeshPhongMaterial);
+            }
+
+
+            // Set material for all objs
+            container.material = material;
+            for (let index in container.children) {
+                container.children[index].material = material;
+            }
         }
-        if (Array.isArray(modelFile["color"]) ||
-            (typeof(container.geometry.getAttribute('color')) !== "undefined" && container.geometry.getAttribute('color').count === container.geometry.getAttribute('position').count)){
-            // If vertex color given by color array or defined inside model file then have vertex color enabled
-            material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, true, THREE.MeshPhongMaterial);
+
+        if (containers.length > 1){
+            return_container = new THREE.Object3D();
+            return_container.children = containers;
         }
         else{
-            material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, false, THREE.MeshPhongMaterial);
+            return_container = containers[0];
         }
 
-
-        // Set material for all objs
-        container.material = material;
-        for (let index in container.children){
-            container.children[index].material = material;
-        }
-
-        return container;
+        return return_container;
     },
     addGeometryObjects: function(modelFile){
         let that = this;

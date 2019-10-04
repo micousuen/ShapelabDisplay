@@ -25,7 +25,8 @@ socket.connect("tcp://127.0.0.1:8081") # find out server's address and port for 
 # 
 dataString = json.dumps([{"fileName": "sphere.obj", "fileData": fileData("./sphere.obj"), "username": "admin", "password": "admin"}, \
 						 {"fileName": "bunny.obj", "fileData": fileData("./bunny.obj"), "username": "admin", "password": "admin"}, \
-						 {"fileName": "teapot.obj", "fileData": fileData("./teapot.obj"), "username": "admin", "password": "admin"}], sort_keys=True)
+						 {"fileName": "teapot.obj", "fileData": fileData("./teapot.obj"), "username": "admin", "password": "admin"}, 
+						 {"GroupProperties": {"GroupName":"new_file_entry"}, "username": "admin", "password": "admin"}], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
 while True:
     t1 = time.time()
