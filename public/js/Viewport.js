@@ -172,21 +172,35 @@ var Viewport = function ( editor ) {
 
 			if ( intersects.length > 0 ) {
 
-				var object = intersects[ 0 ].object;
-
-				if ( object.userData.object !== undefined ) {
-
-					// helper
-
-					editor.select( object.userData.object );
-
-				} else {
-
-					editor.select( object );
-
+				// Select first visible object
+				let object = null;
+				for (let intersects_index in intersects){
+					if (intersects[intersects_index].object.visible){
+						object = intersects[intersects_index].object;
+						break;
+					}
 				}
 
-			} else {
+				if (object === null){
+
+					editor.select(null);
+
+				}
+				else {
+					if ( object.userData.object !== undefined ) {
+
+						// helper
+
+						editor.select( object.userData.object );
+
+					} else {
+
+						editor.select( object );
+
+					}
+				}
+			}
+			else {
 
 				editor.select( null );
 
