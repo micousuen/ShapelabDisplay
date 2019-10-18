@@ -78,11 +78,13 @@ module.exports = {
         DBurl = 'mongodb://'+mongoUsername.toString()+':'+mongoPassword.toString()+'@'+mongoServer.toString()+':'+mongoPort.toString()+'/'+DBname.toString()+'?authSource='+mongoAuthDB;
         var that = this; // Used to transfer current owner object
         var buildBaseConnection = function(){
+
             // Connect to database, mangoose will automatically reconnect if disconnected. Handle reconnection if error occur here
             // When using createConnection to build connection, replace mongoose.model with conn.model (conn is the return value of createConnection)
             that.conns["base"] = mongoose.createConnection(DBurl, {useNewUrlParser: true});
             that.conns["base"].on('error', function(err){console.log("Warning: Cannot connect to database because ",err); that.dbReconnectCallback(that, forWhat)});
             that.conns["base"].on('connected', function(){that.dbConnectCallback(that, forWhat)});
+
             // Connect to userList collection and save model. This is required
             that.models["base"] = that.conns["base"].model('userList', that.schema.userList, 'userList'); // Build model for collection 'userList'
         };
@@ -165,37 +167,6 @@ module.exports = {
         that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack)
     },
 
-    // General data saving function
-    saveData: function (username, password, data, dataType, errorCallBack, successCallBack){
-        if (! this.baseChecking()){
-            errorCallBack("Server didn't build connection to database");
-            return;
-        }
-        let that = this;
-
-        if (! (dataType in that.dataTypes)){
-            errorCallBack("Unkown Data type!");
-            return;
-        }
-
-        let authSuccessCallBack = function(){
-            that.saveDataCallBack(username, data, dataType, errorCallBack, successCallBack);
-        };
-
-        // Start to run userAuthentication and save data
-        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
-    },
-
-    // Save live update data
-    saveLiveupdateData: function(username, password, liveupdateData, errorCallBack, successCallBack){
-        this.saveData(username, password, liveupdateData, "liveupdate", errorCallBack, successCallBack);
-    },
-
-    // Save scenery data (editor data)
-    saveEditorData: function(username, password, editorData, errorCallBack, successCallBack){
-        this.saveData(username, password, editorData, "editor", errorCallBack, successCallBack);
-    },
-
     loadLatestDataCallBack(username, dataType, errorCallBack, successCallBack){
         // Load latest data from database
 
@@ -242,6 +213,38 @@ module.exports = {
         // Step 3: load data and reply
         loadCallBack();
     },
+
+    // Save live update data
+    saveLiveupdateData: function(username, password, liveupdateData, errorCallBack, successCallBack){
+        this.saveData(username, password, liveupdateData, "liveupdate", errorCallBack, successCallBack);
+    },
+
+    // Save scenery data (editor data)
+    saveEditorData: function(username, password, editorData, errorCallBack, successCallBack){
+        this.saveData(username, password, editorData, "editor", errorCallBack, successCallBack);
+    },
+
+    // General data saving function
+    saveData: function (username, password, data, dataType, errorCallBack, successCallBack){
+        if (! this.baseChecking()){
+            errorCallBack("Server didn't build connection to database");
+            return;
+        }
+        let that = this;
+
+        if (! (that.dataTypes.includes(dataType))){
+            errorCallBack("Unkown Data type!");
+            return;
+        }
+
+        let authSuccessCallBack = function(){
+            that.saveDataCallBack(username, data, dataType, errorCallBack, successCallBack);
+        };
+
+        // Start to run userAuthentication and save data
+        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
+    },
+
     saveDataCallBack(username, data, dataType, errorCallBack, successCallBack){
         // Save data to database after authentication
         let that = this;
