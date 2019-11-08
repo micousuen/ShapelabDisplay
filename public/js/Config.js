@@ -29,6 +29,7 @@ var Config = function () {
 		'settings/shortcuts/undo': 'z',
 		'settings/shortcuts/focus': 'f',
 		'settings/shortcuts/screenshot': 'p',
+		'settings/shortcuts/visible': 'v',
 
 		'settings/liveupdate/defaultGroupName': 'fileEntry'
 	};

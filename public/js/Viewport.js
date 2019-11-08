@@ -367,6 +367,12 @@ var Viewport = function ( editor ) {
 
 	} );
 
+	signals.objectVisibleChanged.add( function () {
+
+		render();
+
+	} );
+
 	signals.objectSelected.add( function ( object ) {
 
 		selectionBox.visible = false;

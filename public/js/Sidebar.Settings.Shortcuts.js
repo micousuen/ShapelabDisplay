@@ -159,6 +159,18 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 
 				break;
 
+			case config.getKey('settings/shortcuts/visible'):
+
+				if (editor.selected !== null && editor.selected instanceof THREE.Object3D) {
+
+					editor.selected.visible = ! editor.selected.visible;
+
+					editor.signals.objectVisibleChanged.dispatch();
+
+				}
+
+				break;
+
 			case config.getKey( 'settings/shortcuts/screenshot' ):
 
 				signals.saveCanvasEvent.dispatch();

@@ -69,6 +69,7 @@ var Editor = function () {
 		objectAdded: new Signal(),
 		objectChanged: new Signal(),
 		objectRemoved: new Signal(),
+		objectVisibleChanged: new Signal(),
 
 		cameraAdded: new Signal(),
 		cameraRemoved: new Signal(),
@@ -630,14 +631,18 @@ Editor.prototype = {
 		// Iterate through object and all its parents, if any of them set to invisible, then this object is invisible
 		// Set maximum iteration to 10000, to avoid loop setting
 		for(let i=0; i<10000; i++){
-			console.log(itr);
+
 			if (typeof(itr) === "undefined" || (! itr instanceof THREE.Object3D) ||
-            typeof(itr.parent) === "undefined" ||
+            	typeof(itr.parent) === "undefined" ||
 				typeof(itr.visible) === "undefined" || itr.visible === false){
+
 				return false;
+
 			}
 			if (itr.parent === this.scene){
+
 				return true;
+
 			}
 			itr = object.parent;
 		}
