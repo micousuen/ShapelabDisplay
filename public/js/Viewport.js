@@ -175,9 +175,12 @@ var Viewport = function ( editor ) {
 				// Select first visible object
 				let object = null;
 				for (let intersects_index in intersects){
-					if (intersects[intersects_index].object.visible){
+
+					if (editor.checkObjectVisible(intersects[intersects_index].object)){
+
 						object = intersects[intersects_index].object;
 						break;
+
 					}
 				}
 
