@@ -3,6 +3,7 @@
  */
 
 var Viewport = function ( editor ) {
+	var that = this;
 
 	var signals = editor.signals;
 
@@ -171,21 +172,38 @@ var Viewport = function ( editor ) {
 
 			if ( intersects.length > 0 ) {
 
-				var object = intersects[ 0 ].object;
+				// Select first visible object
+				let object = null;
+				for (let intersects_index in intersects){
 
-				if ( object.userData.object !== undefined ) {
+					if (editor.checkObjectVisible(intersects[intersects_index].object)){
 
-					// helper
+						object = intersects[intersects_index].object;
+						break;
 
-					editor.select( object.userData.object );
-
-				} else {
-
-					editor.select( object );
-
+					}
 				}
 
-			} else {
+				if (object === null){
+
+					editor.select(null);
+
+				}
+				else {
+					if ( object.userData.object !== undefined ) {
+
+						// helper
+
+						editor.select( object.userData.object );
+
+					} else {
+
+						editor.select( object );
+
+					}
+				}
+			}
+			else {
 
 				editor.select( null );
 
@@ -301,6 +319,20 @@ var Viewport = function ( editor ) {
 
 	} );
 
+	signals.saveCanvasEvent.add(function(){
+		// Prepare download link
+		let download = document.getElementById("imageDownload");
+		download.setAttribute('download', 'CanvasShot_'+ /\d\d\:\d\d\:\d\d/.exec(new Date())[0]+'.png');
+
+		// Turn canvas to a blob first, then download it. In this way, img size won't constraint by browser src length limit
+		renderer.domElement.toBlob(function(blob){
+
+			download.href = URL.createObjectURL(blob);
+			download.click()
+
+		});
+	});
+
 	signals.rendererChanged.add( function ( newRenderer ) {
 
 		if ( renderer !== null ) {
@@ -330,6 +362,12 @@ var Viewport = function ( editor ) {
 	} );
 
 	signals.cameraChanged.add( function () {
+
+		render();
+
+	} );
+
+	signals.objectVisibleChanged.add( function () {
 
 		render();
 
@@ -544,6 +582,24 @@ var Viewport = function ( editor ) {
 		render();
 
 	} );
+
+	// Record Scene
+	signals.StartSceneAnimation.add(function(commandToExecute){
+
+		renderer.setAnimationLoop(function(){
+
+			// Give renderer to commandToExecute and let it use for something
+			if (typeof(commandToExecute) !== "undefined"){
+				commandToExecute(renderer);
+			}
+
+		})
+
+	});
+
+	signals.StopSceneAnimation.add(function(){
+		renderer.setAnimationLoop(null);
+	});
 
 	// animations
 

@@ -13,6 +13,13 @@ var Editor = function () {
 
 	this.signals = {
 
+		// Server Sync operations
+		loadScene: new Signal(),
+		clearScene: new Signal(),
+		sendScene: new Signal(),
+		fileEntryUpdate: new Signal(),
+		fileEntryDelete: new Signal(),
+
 		// script
 
 		editScript: new Signal(),
@@ -20,11 +27,22 @@ var Editor = function () {
 		// player
 
 		startPlayer: new Signal(),
+		startPlayerAndRecord: new Signal(),
+		startSceneRecord: new Signal(),
+		stopSceneRecord: new Signal(),
 		stopPlayer: new Signal(),
+		StartSceneAnimation: new Signal(),
+		StopSceneAnimation: new Signal(),
+
+		// actions
+		saveCanvasEvent: new Signal(),
 
 		// notifications
 
 		editorCleared: new Signal(),
+
+		sendSceneStarted: new Signal(),
+		sendSceneFinished: new Signal(),
 
 		savingStarted: new Signal(),
 		savingFinished: new Signal(),
@@ -48,6 +66,7 @@ var Editor = function () {
 		objectAdded: new Signal(),
 		objectChanged: new Signal(),
 		objectRemoved: new Signal(),
+		objectVisibleChanged: new Signal(),
 
 		cameraAdded: new Signal(),
 		cameraRemoved: new Signal(),
@@ -84,7 +103,7 @@ var Editor = function () {
 
 	this.scene = new THREE.Scene();
 	this.scene.name = 'Scene';
-	this.scene.background = new THREE.Color( 0xaaaaaa );
+	this.scene.background = new THREE.Color( 0x8aacca );
 
 	this.sceneHelpers = new THREE.Scene();
 
@@ -207,6 +226,11 @@ Editor.prototype = {
 		this.signals.sceneGraphChanged.dispatch();
 
 	},
+
+    removeObjectByName: function(objectName){
+		// Under scene, search for first matching object with name objectName, then remove this object from scene
+        this.removeObject(this.scene.getObjectByName(objectName));
+    },
 
 	addGeometry: function ( geometry ) {
 
@@ -522,7 +546,7 @@ Editor.prototype = {
 		this.camera.copy( this.DEFAULT_CAMERA );
 		this.scene.name = "Scene";
 		this.scene.userData = {};
-		this.scene.background.setHex( 0xaaaaaa );
+		this.scene.background.setHex( 0x8aacca );
 		this.scene.fog = null;
 
 		var objects = this.scene.children;
@@ -616,6 +640,30 @@ Editor.prototype = {
 
 		return this.scene.getObjectByProperty( 'uuid', uuid, true );
 
+	},
+
+	checkObjectVisible: function (object){
+		let itr = object;
+
+		// Iterate through object and all its parents, if any of them set to invisible, then this object is invisible
+		// Set maximum iteration to 10000, to avoid loop setting
+		for(let i=0; i<10000; i++){
+
+			if (typeof(itr) === "undefined" || (! itr instanceof THREE.Object3D) ||
+            			typeof(itr.parent) === "undefined" ||
+				typeof(itr.visible) === "undefined" || itr.visible === false){
+
+				return false;
+
+			}
+			if (itr.parent === this.scene){
+
+				return true;
+
+			}
+			itr = object.parent;
+		}
+		return false;
 	},
 
 	execute: function ( cmd, optionalName ) {

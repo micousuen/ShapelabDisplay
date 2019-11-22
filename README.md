@@ -83,13 +83,30 @@ And GEOMETRY_DICT must have fields "geometryType", "geometryData", "username", "
 
 }
 ```
-Now GEOMETRY_TYPE_STRING can be "lines", "lineSegments", "lineSegmentPairs".
+Use GEOMETRY_DICT to draw customized points, lines, triangles, polygons. There are different ways to draw different geometry.
+
+|Geometry Type|Available "geometryTypes"|
+|---|---|
+|point|"point"|
+|lines|"lines", "lineSegments", "lineSegmentPairs"|
+|triangles|"triangles", "triangleOnesides", "trianglePairs"|
+|polygon|"polygon"|
+
+If "point", then give a 3D position in geometryData. A sphere with 0.1 radius with be drawn at that position. You can use 4th value in geometryData to control its radius.
 
 If is "lines", then in geometryData user should provide an array of 3D vertices. A line will draw between consecutive pair of vertices. etc. [[0, 0, 0], [1, 0, 0], [0, 1, 0]] will draw following lines: [0, 0, 0] => [1, 0, 0], [1, 0, 0] => [0, 1, 0]
 
 If is "lineSegments", then in geometryData user should provide an array of 3D vertices. A line will draw between each pair of vertices. etc. [[0, 0, 0], [1, 0, 0], [0, 1, 0], [2, 0, 0]] will draw following lines: [0, 0, 0] => [1, 0, 0], [0, 1, 0] => [2, 0, 0]
 
 If is "lineSegmentPairs", then in geometryData user should provide an array of line segment, in which start and end point should be 3D vertices. etc. [[[0, 0, 0], [1, 0, 0]], [[0, 1, 0], [2, 0, 0]]] will draw following lines: [0, 0, 0] => [1, 0, 0], [0, 1, 0] => [2, 0, 0]
+
+If is "triangles", then geometryData should be an array of 3D positions. Triangles will be generated every 3 vertices. Render double sides.
+
+If is "triangleOnesides", then will generate triangles with one side rendering enabled.
+
+If is "trianglePairs", then geometryData should be an array of array in which there should have 3 vertices 3D positions. Render double sides.
+
+If is "polygon", then geometryData should be an array of polygon contour positions in clockwise or counterclockwise order. ONLY 2D points supported now. Will draw polygon by default on x-y plane.
 
 #### TRANSFORMATION_ARRAY
 TRANSOFORMATION_ARRAY is an array contains TRANFORMATION_DICT. Transformation will be applied in order.
@@ -112,7 +129,7 @@ For "lines", you can give it a hex number. you can give starting point and endin
 
 For "lineSegments", you can give it a hex number. you can give starting point and ending point color for each segment. Or color for every vertex in list.
 
-For "lineSegmentPairs", you can give it a hex number. you can give starting point and ending point color for each segment. Or color for every vertex in list, or you can group every two vertices color in one list just like you did for vertices. 
+For "lineSegmentPairs", you can give it a hex number. you can give starting point and ending point color for each segment. Or color for every vertex in list, or you can group every two vertices color in one list just like you did for vertices.
 
 # Reference and acknowledge
 

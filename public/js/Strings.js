@@ -56,6 +56,7 @@ var Strings = function ( config ) {
 			'menubar/add/hemispherelight': 'HemisphereLight',
 			'menubar/add/ambientlight': 'AmbientLight',
 			'menubar/add/perspectivecamera': 'PerspectiveCamera',
+			'menubar/add/arrow': 'Arrow',
 			'menubar/add/orthographiccamera': 'OrthographicCamera',
 
 			'menubar/status/autosave': 'autosave',
@@ -63,6 +64,8 @@ var Strings = function ( config ) {
 			'menubar/play': 'Play',
 			'menubar/play/stop': 'Stop',
 			'menubar/play/play': 'Play',
+			'menubar/play/recordScene': 'Record Scene',
+			'menubar/play/playAndRecord': 'Play and Record',
 
 			'menubar/examples': 'Examples',
 			'menubar/examples/Arkanoid': 'Arkanoid',
@@ -295,6 +298,7 @@ var Strings = function ( config ) {
 			'sidebar/settings/shortcuts/scale': 'Scale',
 			'sidebar/settings/shortcuts/undo': 'Undo',
 			'sidebar/settings/shortcuts/focus': 'Focus',
+			'sidebar/settings/shortcuts/screenshot': 'Screenshot',
 
 			'sidebar/settings/viewport/grid': 'Grid',
 
@@ -360,13 +364,16 @@ var Strings = function ( config ) {
 			'menubar/add/hemispherelight': '半球光',
 			'menubar/add/ambientlight': '环境光',
 			'menubar/add/perspectivecamera': '透视相机',
+			'menubar/add/arrow': '箭头',
 			'menubar/add/orthographiccamera': '正交相机',
 
 			'menubar/status/autosave': '自动保存',
 
 			'menubar/play': '启动',
 			'menubar/play/stop': '暂停',
-			'menubar/play/play': '启动',
+			'menubar/play/play': '播放',
+			'menubar/play/recordScene': '录制当前画面',
+			'menubar/play/playAndRecord': '播放并录制',
 
 			'menubar/examples': '示例',
 			'menubar/examples/Arkanoid': '打砖块',
@@ -573,6 +580,7 @@ var Strings = function ( config ) {
 			'sidebar/settings/shortcuts/scale': '缩放',
 			'sidebar/settings/shortcuts/undo': '撤销',
 			'sidebar/settings/shortcuts/focus': '聚焦',
+			'sidebar/settings/shortcuts/screenshot': '截屏',
 
 			'sidebar/settings/viewport/grid': '网格',
 

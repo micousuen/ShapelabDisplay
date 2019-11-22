@@ -17,6 +17,11 @@ var userListSchema = new mongoose.Schema({
     "password" : String,
     "role" : String
 });
+var dataIndexSchema = new mongoose.Schema({
+    "epochTime": Number,
+    "dataType": String,
+    "dataPatches": Number
+});
 var dataSchema = new mongoose.Schema({
     "epochTime": Number, // get from ((new Date()).getTime()), with milliseconds
     "dataType": String, // "editor" or others
@@ -28,12 +33,14 @@ module.exports = {
     // Some public parameters
     schema: {
         'userList': userListSchema,
+        'dataIndex': dataIndexSchema,
         'data': dataSchema
     },
     databaseReconnectTime : 1000,
     databaseCollectionMaximumRecords: 1000,
     conns : {},
     models: {},
+    dataTypes: ["editor", "liveupdate"],
 
     // Chunk long string
     chunkLongString: function(str, size){
@@ -71,11 +78,13 @@ module.exports = {
         DBurl = 'mongodb://'+mongoUsername.toString()+':'+mongoPassword.toString()+'@'+mongoServer.toString()+':'+mongoPort.toString()+'/'+DBname.toString()+'?authSource='+mongoAuthDB;
         var that = this; // Used to transfer current owner object
         var buildBaseConnection = function(){
+
             // Connect to database, mangoose will automatically reconnect if disconnected. Handle reconnection if error occur here
             // When using createConnection to build connection, replace mongoose.model with conn.model (conn is the return value of createConnection)
             that.conns["base"] = mongoose.createConnection(DBurl, {useNewUrlParser: true});
             that.conns["base"].on('error', function(err){console.log("Warning: Cannot connect to database because ",err); that.dbReconnectCallback(that, forWhat)});
             that.conns["base"].on('connected', function(){that.dbConnectCallback(that, forWhat)});
+
             // Connect to userList collection and save model. This is required
             that.models["base"] = that.conns["base"].model('userList', that.schema.userList, 'userList'); // Build model for collection 'userList'
         };
@@ -126,115 +135,16 @@ module.exports = {
         });
     },
 
-    // Used to save live update data
-    saveLiveupdateData: function(username, password, liveupdateData, errorCallBack, successCallBack){
-        if (! this.baseChecking()){
-            errorCallBack("Server didn't build connection to database");
-            return;
-        }
-        var that = this;
-
-        let authSuccessCallBack = function(){
-            // Step 1: Create or find Model for this user (bind model to user's corresponding collection)
-            if ( ! that.models.hasOwnProperty(username) || typeof(that.models[username]) === "undefined"){
-                // Create model for this user if not created yet
-                that.models[username] = that.conns["base"].model(username, that.schema.data, username);
-            }
-
-            // Step 2: Create Callback to save data. Will be called at Step 3
-            var saveCallBack = function(){
-                let currentTime = new Date().getTime();
-                let dataChunks = that.chunkLongString(liveupdateData, 15*1000*1000);
-                const dataChunkNum = dataChunks.length;
-                let recordChunks = new Array(dataChunkNum);
-                for (let i = 0; i < dataChunkNum; i++){
-                    recordChunks[i] = {"epochTime": currentTime, "dataType": "liveupdate", "data": dataChunks[i], "dataIndex": i};
-                }
-                that.models[username].insertMany(recordChunks, function(err, docs){
-                    if(err) {
-                        errorCallBack("database cannot save editor data now"+err.toString());
-                        return;
-                    }
-                    else{
-                        successCallBack();
-                        return;
-                    }
-                });
-            };
-
-            // Step 3: Check database validation, make sure every collection won't over load. If not over load then insert data (use saveCallBack created in step 2)
-            that.models[username].estimatedDocumentCount(function(err, num){
-                // If error occur, return error to client
-                if (err) { errorCallBack(err); return;}
-                // If too many records in collection, remove oldest records
-                if (num >= that.databaseCollectionMaximumRecords) {
-                    // Remove oldest 10% data
-                    that.models[username].find().sort({epochTime: 1}).limit(num - Math.floor(that.databaseCollectionMaximumRecords * 0.9)).exec(function (err, result) {
-                        that.models[username].deleteMany({epochTime: { $lte: result[result.length - 1].epochTime} }, function(err){
-                            // If error in deleting, return error to client
-                            if (err) {errorCallBack("Failed in removing user's oldest history");return;}
-                            // If no error, then start to insert data
-                            saveCallBack();
-                        });
-                    });
-                }
-                else{
-                    // User Collection haven't meet maximum limit, insert data directly
-                    saveCallBack();
-                }
-            });
-        };
-
-        // Start to run userAuthentication and save data
-        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
-
-    },
-
     // Used to get Liveupdate data
     loadLiveupdateData: function(username, password, errorCallBack, successCallBack){
         if (! this.baseChecking()){
             errorCallBack("Server cannot connect to database");
             return;
         }
-        var that = this;
+        let that = this;
 
         let authSuccessCallBack = function(){
-            // Step 1: Create or find Model for this user (bind model to user's corresponding collection)
-            if ( ! that.models.hasOwnProperty(username) || typeof(that.models[username]) === "undefined"){
-                // Create model for this user if not created yet
-                that.models[username] = that.conns["base"].model(username, that.schema.data, username);
-            }
-
-            // Step 2: Create Callback to load data. Will be called at Step 3
-            var loadCallBack = function(){
-                that.models[username].find({"dataType":"liveupdate"}).sort({epochTime: -1}).limit(1).exec(function(err, docs){
-                    if (err || typeof(docs[0]) === "undefined" || (! ("data" in docs[0]))) {
-                        errorCallBack("Cannot get data from database, record don't exist");
-                        return;
-                    }
-                    else {
-                        // documents may consist of many chunks, search again by using epoch time and combine them
-                        that.models[username].find({epochTime: docs[0].epochTime, "dataType":"liveupdate"}).exec(function(err, docs){
-                            // not using sort here, to avoid hit the mongo sort memory limit
-                            let editorDataChunkNum = docs.length;
-                            let editorDataChunks = new Array(editorDataChunkNum);
-                            for (let i = 0; i < editorDataChunkNum; i++){
-                                for (let j = 0; j < editorDataChunkNum; j++){
-                                    if (docs[j]["dataIndex"] === i){
-                                        editorDataChunks[i] = docs[i].data;
-                                        break;
-                                    }
-                                }
-                            }
-                            successCallBack(editorDataChunks.join("")); // Concatenate editorDataChunks and return it to client
-                            return;
-                        });
-                    }
-                });
-            };
-
-            // Step 3: load data and reply
-            loadCallBack();
+            that.loadLatestDataCallBack(username, "liveupdate", errorCallBack, successCallBack);
         };
 
         // Start to auth and load liveupdate data
@@ -247,104 +157,128 @@ module.exports = {
             errorCallBack("Server cannot connect to database");
             return;
         }
-        var that = this;
-        this.models["base"].find({"username": username}, function(err, docs){
-            if (err) {
-                errorCallBack(err);
-                return;
-            }
-            if(docs.length > 1) {
-                console.log("Warning: more than 1 record found with username <" + username + ">, will use the first one by default");
-            }
-            var userRecord = docs[0];
-            if (docs.length < 1 || password !== userRecord.password){
-                errorCallBack("Incorrect username or password");
-                return;
-            }
-            else{
-                // Passed checking, start to load data
+        let that = this;
 
-                // Step 1: Create or find Model for this user (bind model to user's corresponding collection)
-                if ( ! that.models.hasOwnProperty(username) || typeof(that.models[username]) === "undefined"){
-                    // Create model for this user if not created yet
-                    that.models[username] = that.conns["base"].model(username, that.schema.data, username);
-                }
+        let authSuccessCallBack = function(){
+            that.loadLatestDataCallBack(username,"editor", errorCallBack, successCallBack);
+        };
 
-                // Step 2: Create Callback to load data. Will be called at Step 3
-                var loadCallBack = function(){
-                    that.models[username].find({"dataType":"editor"}).sort({epochTime: -1}).limit(1).exec(function(err, docs){
-                        if (err || typeof(docs[0]) === "undefined" || (! ("data" in docs[0]))) {
-                            errorCallBack("Cannot get data from database, record don't exist");
-                            return;
-                        }
-                        else {
-                            // documents may consist of many chunks, search again by using epoch time and combine them
-                            that.models[username].find({epochTime: docs[0].epochTime, "dataType":"editor"}).exec(function(err, docs){
-                                // not using sort here, to avoid hit the mongo sort memory limit
-                                let editorDataChunkNum = docs.length;
-                                let editorDataChunks = new Array(editorDataChunkNum);
-                                for (let i = 0; i < editorDataChunkNum; i++){
-                                    for (let j = 0; j < editorDataChunkNum; j++){
-                                        if (docs[j]["dataIndex"] === i){
-                                            editorDataChunks[i] = docs[i].data;
-                                            break;
-                                        }
-                                    }
-                                }
-                                successCallBack(editorDataChunks.join("")); // Concatenate editorDataChunks and return it to client
-                                return;
-                            });
-                        }
-                    });
-                };
-
-                // Step 3: load data and reply
-                loadCallBack();
-            }
-        });
+        // Start to auth and load liveupdate data
+        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack)
     },
 
-    // Used to process and save editor Data
+    loadLatestDataCallBack(username, dataType, errorCallBack, successCallBack){
+        // Load latest data from database
+
+        let that = this;
+
+        // Step 1: Create or find Model for this user (bind model to user's corresponding collection)
+        if ( ! that.models.hasOwnProperty(username) || typeof(that.models[username]) === "undefined"){
+            // Create model for this user if not created yet
+            that.models[username] = that.conns["base"].model(username, that.schema.data, username);
+        }
+        if ( (! that.models.hasOwnProperty(username+".index")) || typeof(that.models[username+".index"]) === "undefined" ){
+            // Create model for this user if not created yet
+            that.models[username+".index"] = that.conns["base"].model(username+".index", that.schema.dataIndex, username+".index");
+        }
+
+        // Step 2: Create Callback to load data. Will be called at Step 3
+        let loadCallBack = function(){
+            that.models[username+".index"].find({"dataType":dataType}).sort({epochTime: -1}).limit(1).exec(function(err, docs){
+                if (err || typeof(docs[0]) === "undefined" || (! ("epochTime" in docs[0]))) {
+                    errorCallBack("Cannot get data from database, record don't exist or broken");
+                    return;
+                }
+                else {
+                    // documents may consist of many chunks, search again by using epoch time and combine them
+                    that.models[username].find({epochTime: docs[0].epochTime, "dataType":dataType}).exec(function(err, docs){
+                        // not using sort here, to avoid hit the mongo sort memory limit
+                        let editorDataChunkNum = docs.length;
+                        let editorDataChunks = new Array(editorDataChunkNum);
+                        for (let i = 0; i < editorDataChunkNum; i++){
+                            for (let j = 0; j < editorDataChunkNum; j++){
+                                if (docs[j]["dataIndex"] === i){
+                                    editorDataChunks[i] = docs[i].data;
+                                    break;
+                                }
+                            }
+                        }
+                        successCallBack(editorDataChunks.join("")); // Concatenate editorDataChunks and return it to client
+                        return;
+                    });
+                }
+            });
+        };
+
+        // Step 3: load data and reply
+        loadCallBack();
+    },
+
+    // Save live update data
+    saveLiveupdateData: function(username, password, liveupdateData, errorCallBack, successCallBack){
+        this.saveData(username, password, liveupdateData, "liveupdate", errorCallBack, successCallBack);
+    },
+
+    // Save scenery data (editor data)
     saveEditorData: function(username, password, editorData, errorCallBack, successCallBack){
+        this.saveData(username, password, editorData, "editor", errorCallBack, successCallBack);
+    },
+
+    // General data saving function
+    saveData: function (username, password, data, dataType, errorCallBack, successCallBack){
         if (! this.baseChecking()){
             errorCallBack("Server didn't build connection to database");
             return;
         }
-        var that = this;
-        this.models["base"].find({"username": username}, function(err, docs){
-            if (err) {
-                errorCallBack(err);
-                return;
-            }
-            if(docs.length > 1) {
-                console.log("Warning: more than 1 record found with username <" + username + ">, will use the first one by default");
-            }
-            var userRecord = docs[0];
-            if (docs.length < 1 || password !== userRecord.password){
-                errorCallBack("Incorrect username or password");
-                return;
-            }
-            else{
-                // Passed checking, start to save data
+        let that = this;
 
-                // Step 1: Create or find Model for this user (bind model to user's corresponding collection)
-                if ( ! that.models.hasOwnProperty(username) || typeof(that.models[username]) === "undefined"){
-                    // Create model for this user if not created yet
-                    that.models[username] = that.conns["base"].model(username, that.schema.data, username);
+        if (! (that.dataTypes.includes(dataType))){
+            errorCallBack("Unkown Data type!");
+            return;
+        }
+
+        let authSuccessCallBack = function(){
+            that.saveDataCallBack(username, data, dataType, errorCallBack, successCallBack);
+        };
+
+        // Start to run userAuthentication and save data
+        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
+    },
+
+    saveDataCallBack(username, data, dataType, errorCallBack, successCallBack){
+        // Save data to database after authentication
+        let that = this;
+
+        // Step 1: Create or find Model for this user (bind model to user's corresponding collection)
+        if ( (! that.models.hasOwnProperty(username)) || typeof(that.models[username]) === "undefined" ){
+            // Create model for this user if not created yet
+            that.models[username] = that.conns["base"].model(username, that.schema.data, username);
+        }
+        if ( (! that.models.hasOwnProperty(username+".index")) || typeof(that.models[username+".index"]) === "undefined" ){
+            // Create model for this user if not created yet
+            that.models[username+".index"] = that.conns["base"].model(username+".index", that.schema.dataIndex, username+".index");
+        }
+
+        // Step 2: Create Callback to save data. Will be called at Step 3
+        let saveCallBack = function(){
+            let currentTime = new Date().getTime();
+            let dataChunks = that.chunkLongString(data, 15*1000*1000);
+            const dataChunkNum = dataChunks.length;
+            let recordChunks = new Array(dataChunkNum);
+            for (let i = 0; i < dataChunkNum; i++){
+                recordChunks[i] = {"epochTime": currentTime, "dataType": dataType, "data": dataChunks[i], "dataIndex": i};
+            }
+            let recordIndex = new Array(1);
+            recordIndex[0] = {"epochTime": currentTime, "dataType": dataType, "dataPatches": dataChunkNum};
+            that.models[username+".index"].insertMany(recordIndex, function(err, docs){
+                if(err) {
+                    errorCallBack("database cannot save dataIndex now: "+erro.toString());
+                    return;
                 }
-
-                // Step 2: Create Callback to save data. Will be called at Step 3
-                var saveCallBack = function(){
-                    let currentTime = new Date().getTime();
-                    let dataChunks = that.chunkLongString(editorData, 15*1000*1000);
-                    const dataChunkNum = dataChunks.length;
-                    let recordChunks = new Array(dataChunkNum);
-                    for (let i = 0; i < dataChunkNum; i++){
-                        recordChunks[i] = {"epochTime": currentTime, "dataType": "editor", "data": dataChunks[i], "dataIndex": i};
-                    }
+                else{
                     that.models[username].insertMany(recordChunks, function(err, docs){
                         if(err) {
-                            errorCallBack("database cannot save editor data now"+err.toString());
+                            errorCallBack("database cannot save data now"+err.toString());
                             return;
                         }
                         else{
@@ -352,29 +286,53 @@ module.exports = {
                             return;
                         }
                     });
-                };
+                }
+            });
+        };
 
-                // Step 3: Check database validation, make sure every collection won't over load. If not over load then insert data (use saveCallBack created in step 2)
-                that.models[username].estimatedDocumentCount(function(err, num){
-                    // If error occur, return error to client
-                    if (err) { errorCallBack(err); return;}
-                    // If too many records in collection, remove oldest records
-                    if (num >= that.databaseCollectionMaximumRecords) {
-                        // Remove oldest 10% data
-                        that.models[username].find().sort({epochTime: 1}).limit(num - Math.floor(that.databaseCollectionMaximumRecords * 0.9)).exec(function (err, result) {
-                            that.models[username].deleteMany({epochTime: { $lte: result[result.length - 1].epochTime} }, function(err){
-                                // If error in deleting, return error to client
-                                if (err) {errorCallBack("Failed in removing user's oldest history");return;}
-                                // If no error, then start to insert data
-                                saveCallBack();
-                            });
-                        });
-                    }
-                    else{
-                        // User Collection haven't meet maximum limit, insert data directly
-                        saveCallBack();
-                    }
-                });
+        // Step 3: Check database validation, make sure every collection won't over load. If not over load then insert data (use saveCallBack created in step 2)
+        that.models[username].estimatedDocumentCount(function(err, num){
+            // If error occur, return error to client
+            if (err) { errorCallBack(err); return;}
+            // If too many records in collection, remove oldest records
+            if (num >= that.databaseCollectionMaximumRecords) {
+                // Remove oldest 10% data
+                let percentageToRemove = 0.1;
+
+                for (let dataTypeIndex = 0; dataTypeIndex < that.dataTypes.length; dataTypeIndex ++){
+                    that.models[username+".index"].find({"dataType": that.dataTypes[dataTypeIndex]}).countDocuments(function(err, typeNum) {
+                        if (typeNum >= Math.ceil(1 / percentageToRemove)) {
+                            that.models[username + ".index"].find({"dataType": that.dataTypes[dataTypeIndex]}).sort({epochTime: 1}).limit(Math.max(Math.ceil(percentageToRemove * typeNum), 1)).exec(function (err, result) {
+                                if (result.length < 1){
+                                    return;
+                                }
+                                let last_epochTime = result[result.length - 1].epochTime;
+                                that.models[username].deleteMany({"dataType": that.dataTypes[dataTypeIndex], epochTime: {$lte: last_epochTime}, }, function (err) {
+                                    // If error in deleting, return error to client
+                                    if (err) {
+                                        errorCallBack("Failed in removing user's oldest history");
+                                        return;
+                                    }
+                                    // If succeed then remove index
+                                    that.models[username + ".index"].deleteMany({"dataType": that.dataTypes[dataTypeIndex], epochTime: {$lte: last_epochTime}}, function (err) {
+                                        // If error in deleting, return error to client
+                                        if (err) {
+                                            errorCallBack("Failed in removing user's oldest history");
+                                            return;
+                                        }
+                                    });
+                                });
+                            })
+                        }
+                        if (dataTypeIndex >= that.dataTypes.length - 1){
+                            saveCallBack();
+                        }
+                    })
+                }
+            }
+            else{
+                // User Collection haven't meet maximum limit, insert data directly
+                saveCallBack();
             }
         });
     }

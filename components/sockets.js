@@ -59,8 +59,9 @@ module.exports = {
                 let userData = {};
                 let userAuth = {};
                 let processor = function(processStatus, data){ // processor is a function used to reply async query
-                    // If processStatus === 1, data should have field "username" and "userdata". And in "userdata", "fileName" and "fileData" field should be there.
-                    //                         Data will stored and send out when all of them are ready
+                    // If processStatus === 1, data should have field "username" and "userdata".
+                    //                         And in "userdata", "fileName" and "fileData" field should be there.
+                    //                         Data will be stored and send out when all of them are ready
                     // If processStatus === 0, data will be turned to string and give to user as failed reason
                     if (processStatus === 1){
                         // Succeed.
@@ -120,9 +121,9 @@ module.exports = {
                                 },
                                 function(){
                                     // Process message, broadcast everything except username and password to corresponding users. 
-                                    let copied_dict = {}
+                                    let copied_dict = {};
                                     for (let field in ele){
-                                        if (! (field in ["username", "password"])){
+                                        if (! (["username", "password"].includes(field))){
                                             copied_dict[field] = ele[field];
                                         }
                                     }

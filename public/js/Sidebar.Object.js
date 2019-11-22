@@ -674,6 +674,19 @@ Sidebar.Object = function ( editor ) {
 
 	} );
 
+	signals.objectVisibleChanged.add(function(){
+		let object = editor.selected;
+
+		if ( object !== null && typeof(objectVisible) !== "undefined" && typeof(objectVisible.dom) !== "undefined") {
+
+			if (object.visible)
+				objectVisible.dom.checked = true;
+			else
+				objectVisible.dom.checked = false;
+
+		}
+	});
+
 	function updateUI( object ) {
 
 		objectType.setValue( object.type );

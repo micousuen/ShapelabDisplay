@@ -2,11 +2,67 @@ const username = "admin";
 const password = "admin";
 
 const DEFAULT_LINE_COLOR = 0x000000;
-const DEFAULT_MESH_COLOR = 0xff5500;
+const DEFAULT_MESH_COLOR = 0x0055ff;
 const DEFAULT_POINT_COLOR = 0xff0000;
 
-var Communication = function(){
-};
+var Communication = function(editor){
+    // Create new connection to server
+    var that = this;
+    if (typeof(this.socket) !== "undefined" && "disconnect" in this.socket){
+        this.socket.disconnect();
+    }
+    this.socket = io({'forceNew': true});
+    var reconnectOperation = function(){
+        if (that.reconnectTimes > 0) {
+            setTimeout(function () {
+                that.socketConnect()
+            }, that.reconnectDelay);
+            that.reconnectTimes = that.reconnectTimes - 1;
+            console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Info: '+that.reconnectTimes.toString()+' reconnection chance left');
+            if (that.reconnectDelay < 60000)
+                that.reconnectDelay = that.reconnectDelay * 2;
+        }
+        else{
+            if(that.reconnectTimes === 0)
+                if(! alert("Cannot connect to server, click OK to in offline mode..."))
+                    console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: work in offline mode");
+        }
+    };
+    let wrappedContainer = undefined;
+
+
+    this.socket.on("authentication", function(callBack){
+        callBack({"username":username, "password":password});
+    });
+    this.socket.on("authenticationSucceed", function(callBack){
+        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Info: Connected to server");
+        that.reconnectTimes = that.reconnectTimesLimit;
+        that.reconnectDelay = 5000; // reset reconnection if succeed in authentication
+    });
+    this.socket.on("disconnect", function(reason){
+        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Warning: Disconnected with server because <",reason,">, reconnecting...");
+    });
+    this.socket.on("authenticationFailed", function(callBack){
+        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Failed in socket authentication, retrying...");
+        reconnectOperation();
+    });
+    this.socket.on("fileEntryModelUpdate", function(data, callBack){that.processFileEntryUpdate(editor, data, callBack)});
+
+    // Bind signal events
+    var timeout;
+    editor.signals.sendScene.add(function(scene){
+        clearTimeout(timeout);
+        timeout = setTimeout(function(){
+							        editor.signals.sendSceneStarted.dispatch();
+							        timeout = setTimeout(function(){
+							            communication.sendScene( editor );
+							        	editor.signals.sendSceneFinished.dispatch();
+									}, 100);
+								}, 1000);
+    });
+    editor.signals.loadScene.add(function(){that.loadScene(editor)});
+    editor.signals.clearScene.add(function(){editor.clear()});
+}
 
 Communication.prototype = {
     socket: undefined,
@@ -18,7 +74,7 @@ Communication.prototype = {
         log_strings = new Array(log.length).fill("").map((x, i) => String(log[i]));
         console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', log_strings.join(""))
     },
-    sendStatus: function(editor){
+    sendScene: function(editor){
         var start = performance.now();
         let editorJSONstring = JSON.stringify(editor.toJSON());
         let dataToSend = {
@@ -34,6 +90,31 @@ Communication.prototype = {
                 console.log(result);
             }});
     },
+    loadScene: function(editor, failureCallBack, successCallBack){
+        let that = this;
+        var start = performance.now();
+        var editorRequest = $.ajax({url: "api/load_data/editor", method: "GET",
+            data: {
+                username: username,
+                password: password
+            }});
+        editorRequest.done(function(msg){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load editor data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
+            // Clear editor scene and load editor from result
+            editor.clear();
+            editor.fromJSON(JSON.parse(msg));
+            if (typeof(successCallBack) === "function"){
+                successCallBack();
+            }
+        });
+        editorRequest.fail(function(jqXHR, textStatus){
+            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Cannot load data from server "+textStatus);
+            if (typeof(failureCallBack) === "function"){
+                failureCallBack();
+            }
+        });
+    },
+
     loadLatestLiveupdate: function(editor, failureCallBack, successCallBack){
         let that = this;
         let start = performance.now();
@@ -57,31 +138,8 @@ Communication.prototype = {
             }
         });
     },
-    loadScene: function(editor, failureCallBack, successCallBack){
-        let that = this;
-        var start = performance.now();
-        var editorRequest = $.ajax({url: "api/load_data/editor", method: "GET",
-            data: {
-                username: username,
-                password: password
-            }});
-        editorRequest.done(function(msg){
-            console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Load editor data from Server. ' + ( performance.now() - start ).toFixed( 2 ) + 'ms' );
-            // Clear editor scene and load editor from result
-            editor.clear();
-            editor.fromJSON(JSON.parse(msg));
-            if (typeof(successCallBack) === "function"){
-                successCallBack();
-            }
-        });
-        editorRequest.fail(function(jqXHR, textStatus){
-           console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Cannot load data from server "+textStatus);
-           if (typeof(failureCallBack) === "function"){
-               failureCallBack();
-           }
-        });
-    },
     applyTransformToContainer : function(container, transformList){
+        let that = this;
         for (let index in transformList){
             let transformDict = transformList[index];
             if ("translate" in transformDict){
@@ -95,65 +153,25 @@ Communication.prototype = {
                     that.log("Incorrect translate format")
                 }
             }
+            // Order of rotation is controlled by rotation.order, has nothing related to these three orders
             if ("rotateX" in transformDict){
-                container.rotateX(transformDict["rotateX"])
+                container.rotation.x = transformDict["rotateX"];
             }
             if ("rotateY" in transformDict){
-                container.rotateY(transformDict["rotateY"])
+                container.rotation.y = transformDict["rotateY"];
             }
             if ("rotateZ" in transformDict){
-                container.rotateZ(transformDict["rotateZ"])
+                container.rotation.z = transformDict["rotateZ"];
             }
+            container.rotation.order = "ZYX";
         }
         return container
-    },
-    socketConnect : function(editor){
-        var that = this;
-        if (typeof(this.socket) !== "undefined" && "disconnect" in this.socket){
-            this.socket.disconnect();
-        }
-        this.socket = io({'forceNew': true});
-        var reconnectOperation = function(){
-            if (that.reconnectTimes > 0) {
-                setTimeout(function () {
-                    that.socketConnect()
-                }, that.reconnectDelay);
-                that.reconnectTimes = that.reconnectTimes - 1;
-                console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', 'Info: '+that.reconnectTimes.toString()+' reconnection chance left');
-                if (that.reconnectDelay < 60000)
-                    that.reconnectDelay = that.reconnectDelay * 2;
-            }
-            else{
-                if(that.reconnectTimes === 0)
-                    if(! alert("Cannot connect to server, click OK to in offline mode..."))
-                        console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']',"Info: work in offline mode");
-            }
-        };
-        let wrappedContainer = undefined;
-
-
-        this.socket.on("authentication", function(callBack){
-            callBack({"username":username, "password":password});
-        });
-        this.socket.on("authenticationSucceed", function(callBack){
-            console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Info: Connected to server");
-            that.reconnectTimes = that.reconnectTimesLimit;
-            that.reconnectDelay = 5000; // reset reconnection if succeed in authentication
-        });
-        this.socket.on("disconnect", function(reason){
-            console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Warning: Disconnected with server because <",reason,">, reconnecting...");
-        });
-        this.socket.on("authenticationFailed", function(callBack){
-            console.log('[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Error: Failed in socket authentication, retrying...");
-            reconnectOperation();
-        });
-        this.socket.on("fileEntryModelUpdate", function(data, callBack){that.processFileEntryUpdate(editor, data, callBack)});
     },
     processFileEntryUpdate: function(editor, data, callBack){
         let that = this;
         let modelFiles = undefined;
-        wrappedContainer = new THREE.Group();
-        wrappedContainer.name = editor.config.getKey("settings/liveupdate/defaultGroupName");
+        let groupName = editor.config.getKey("settings/liveupdate/defaultGroupName");
+        let wrappedContainer = new THREE.Group();
 
         // Parse fileEntryModel
         try{
@@ -165,9 +183,6 @@ Communication.prototype = {
             throw "Error!";
         }
 
-
-        // Only one fileEntry allowed in scene, so remove old one if already defined
-        editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName"), editor.scene); // This will remove all object with name fileEntry under scene, be careful.
         // Based on file type (get from fileName), parse it and add to scene
         for (let modelFileIndex in modelFiles){
             let modelFile = modelFiles[modelFileIndex];
@@ -177,16 +192,78 @@ Communication.prototype = {
                     wrappedContainer.add(container);
                 }
             }
-            if ("fileName" in modelFile) {
+            else if ("fileName" in modelFile) {
                 let container = that.addModelFile(modelFile);
                 if (typeof(container) !== "undefined"){
                     wrappedContainer.add(container);
                 }
             }
+            else if ("GroupProperties" in modelFile){
+                if ("GroupName" in modelFile["GroupProperties"]){
+                    groupName = modelFile["GroupProperties"]["GroupName"];
+                }
+            }
         }
+
+        wrappedContainer.name = groupName;
+        // Only one group name allowed in scene, so remove old one if already defined
+        // editor.removeObjectByName(editor.config.getKey("settings/liveupdate/defaultGroupName")); // Old version, didn't support history
+        let object_to_remove = editor.scene.getObjectByName(groupName);
+        if (typeof(object_to_remove) !== "undefined"){
+            editor.execute(new RemoveObjectCommand(editor, object_to_remove));
+        }
+
         // Add wrappedContainer to scene
         that.fileEntryContainer = wrappedContainer;
-        editor.addObject(wrappedContainer);
+        editor.execute(new AddObjectCommand(editor, wrappedContainer));
+
+    },
+    create_material: function(materialSettings, default_color, default_opacity, enable_vertex_color, material_type){
+        // Set up color to default color or color in modelSettings
+        let gcolor = 0x0055ff;
+        if (typeof(default_color) !== "undefined"){
+            gcolor = default_color;
+        }
+        if ("color" in materialSettings && (! isNaN(materialSettings["color"]))){
+            gcolor = materialSettings["color"];
+        }
+
+        // Set up opacity
+        let opacity = 1.0;
+        if (! isNaN(default_opacity)){
+            opacity = Math.min(1, Math.max(0, default_opacity));
+        }
+        if ("opacity" in materialSettings && (! isNaN(materialSettings["opacity"]))){
+            opacity = Math.min(1, Math.max(0, materialSettings["opacity"]));
+        }
+
+        // Set up attributes for new materials
+        let material_dict = {};
+        material_dict["side"]=THREE.DoubleSide;
+        if (enable_vertex_color){
+            material_dict["vertexColors"]=THREE.VertexColors;
+        }
+        else{
+            material_dict["color"]=gcolor;
+        }
+
+        // Set transparent if opacity is smaller than 1.0
+        if ("opacity" in materialSettings && (! isNaN(materialSettings["opacity"])) && materialSettings["opacity"] < 1.0) {
+            material_dict["opacity"]=opacity;
+            material_dict["transparent"]=true;
+        }
+        // For PointsMaterial Only
+        if ("size" in materialSettings){
+            material_dict["size"]=materialSettings["size"];
+        }
+
+        // create new material
+        if (typeof(material_type) !== "undefined"){
+            return new material_type(material_dict);
+        }
+        else{
+            return new THREE.MeshBasicMaterial(material_dict);
+        }
     },
     addModelFile: function(modelFile){
         let that = this;
@@ -196,66 +273,91 @@ Communication.prototype = {
             return undefined;
         }
 
-        let container = null, defaultMeshColor = 0x0055ff, material=null;
+        let material = null, containers = null, return_container = null;
+
+        // Load model data based on model type
         switch (modelFile.fileName.slice((modelFile.fileName.lastIndexOf(".") - 1 >>> 0) + 2)) {
             case "obj":
                 // Load model to container
-                container = new THREE.OBJLoader().parse(modelFile.fileData);
-                container.name = modelFile.fileName;
-                if ("color" in modelFile){
-                    defaultMeshColor = modelFile["color"];
-                }
-                material = new THREE.MeshPhongMaterial({color: defaultMeshColor});
+                containers = new THREE.OBJLoader().parse(modelFile.fileData).children;
+                let file_basename = modelFile.fileName.slice(0, (modelFile.fileName.lastIndexOf(".") - 1 >>> 0) + 1);
 
-
-                // If configuration exist, set model to that configuration
-                if ("configuration" in modelFile) {
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                // If more than one part exist, then set part name for it
+                if (containers.length > 1) {
+                    for (let i = 1; i <= containers.length; i++) {
+                        containers[i].name = file_basename + "_part" + i.toString() + ".obj"
+                    }
                 }
-                else if ("fileConfiguration" in modelFile){
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                else{
+                    containers[0].name = modelFile.fileName;
                 }
-
-                // Set material for all objs
-                for (let index in container.children){
-                    container.children[index].material = material;
-                }
-                return container;
                 break;
             case "ply":
                 // Load model to container
                 let loadTimeBefore = new Date().getTime();
                 let geometry = new THREE.PLYLoader().parse(modelFile.fileData);
-                if ("color" in modelFile){
-                    defaultMeshColor = modelFile["color"];
-                }
-                material = new THREE.MeshPhongMaterial({color: defaultMeshColor});
 
                 // Set up geometry and compute normals for display
                 geometry.computeVertexNormals();
-                container = new THREE.Mesh(geometry, material);
+                containers = [new THREE.Mesh(geometry, material)];
                 console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Info: cost: ", new Date().getTime() - loadTimeBefore, " ms in loading PLY model");
-                container.name = modelFile.fileName;
-
-                // If configuration exist, set model to that configuration
-                if ("configuration" in modelFile) {
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
-                }
-                else if ("fileConfiguration" in modelFile){
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
-                }
-                return container;
+                containers[0].name = modelFile.fileName;
                 break;
             default:
                 console.log("Error: fileEntryFormat not implemented or wrong data");
                 return undefined;
         }
-    },
-    colorToColorlist: function(colorInt){
-        if (! isNaN(colorInt)){
-            let result = [];
-            result.push()
+
+        for (let container_index in containers) {
+            let container = containers[container_index];
+
+            // If configuration exist, set model to that configuration
+            if ("configuration" in modelFile) {
+                container = that.applyTransformToContainer(container, modelFile.configuration)
+            }
+
+
+            // Set up color for model if color array given and Create material for mesh
+            if (Array.isArray(modelFile["color"])) {
+                // Use color array to assign each vertex with a color
+                container.geometry.removeAttribute('color');
+                let num_of_vertex = container.geometry.getAttribute('position').count;
+                let colors = new Float32Array(num_of_vertex * 3);
+                let color_length = modelFile["color"].length;
+                let color_to_add = new THREE.Color();
+                for (let color_index = 0; color_index < num_of_vertex; color_index++) {
+                    color_to_add.set(modelFile["color"][color_index % color_length]);
+                    colors[color_index * 3] = color_to_add.r;
+                    colors[color_index * 3 + 1] = color_to_add.g;
+                    colors[color_index * 3 + 2] = color_to_add.b;
+                }
+                container.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            }
+            if (Array.isArray(modelFile["color"]) ||
+                (typeof (container.geometry) !== "undefined" && (typeof (container.geometry.getAttribute('color')) !== "undefined" && container.geometry.getAttribute('color').count === container.geometry.getAttribute('position').count))) {
+                // If vertex color given by color array or defined inside model file then have vertex color enabled
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, true, THREE.MeshPhongMaterial);
+            } else {
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, false, THREE.MeshPhongMaterial);
+            }
+
+
+            // Set material for all objs
+            container.material = material;
+            for (let index in container.children) {
+                container.children[index].material = material;
+            }
         }
+
+        if (containers.length > 1){
+            return_container = new THREE.Object3D();
+            return_container.children = containers;
+        }
+        else{
+            return_container = containers[0];
+        }
+
+        return return_container;
     },
     addGeometryObjects: function(modelFile){
         let that = this;
@@ -268,6 +370,7 @@ Communication.prototype = {
             let vd = geometryData;
             for (let index in vd){
                 if (vd[index].length !== 3 && vd[index].length !== 2){
+                    console.log(vd[index]);
                     console.log('[' + /\d\d\:\d\d\:\d\d/.exec(new Date())[0] + ']', "Error: geometryData error, illegal vertex length");
                     return false;
                 }
@@ -282,10 +385,6 @@ Communication.prototype = {
                 vd = modelFile["geometryData"];
                 if (! geometryDataValidation(vd)){
                     return undefined;
-                }
-                if (! "color" in modelFile){
-                    // Default line color
-                    modelFile["color"] = DEFAULT_LINE_COLOR;
                 }
 
                 // Create line geometry between consecutive pair of vertices, won't draw from last point to first point
@@ -306,9 +405,9 @@ Communication.prototype = {
                                     let colorDiff = [c1.r-c0.r, c1.g-c0.g, c1.b-c0.b].map(x => x / (vd.length - 1));
                                     colors.push(c0.r+colorDiff[0]*index, c0.g+colorDiff[1]*index, c0.b+colorDiff[2]*index);
                                 }
-                                else if (modelFile["color"].length === vd.length){
+                                else{
                                     let pc = new THREE.Color();
-                                    pc.set(modelFile["color"][index]);
+                                    pc.set(modelFile["color"][index % modelFile["color"].length]);
                                     colors.push(pc.r, pc.g, pc.b);
                                 }
                             }
@@ -317,23 +416,14 @@ Communication.prototype = {
                             vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
                             // If line gradient color given, then use this color
                             if (Array.isArray(modelFile["color"])){
-                                if (modelFile["color"].length === 2){
-                                    if (index + 1 < vd.length) {
-                                        vertices.push(vd[index + 1][0], vd[index + 1][1], typeof (vd[index + 1][2]) !== "undefined" ? vd[index][2] : 0);
-                                        let p0c = new THREE.Color(), p1c = new THREE.Color();
-                                        p0c.set(modelFile["color"][0]);
-                                        p1c.set(modelFile["color"][1]);
-                                        colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
-                                    }
-                                    else{
+                                if (modelFile["color"].length === 2 && (! (isNaN(modelFile["color"][0]))) && (! (isNaN(modelFile["color"][1])))){
                                         let p1c = new THREE.Color();
-                                        p1c.set(modelFile["color"][1]);
+                                        p1c.set(modelFile["color"][index % 2]);
                                         colors.push(p1c.r, p1c.g, p1c.b);
-                                    }
                                 }
-                                else if (modelFile["color"].length === vd.length){
+                                else{
                                     let pc = new THREE.Color();
-                                    pc.set(modelFile["color"][index]);
+                                    pc.set(modelFile["color"][index % modelFile["color"].length]);
                                     colors.push(pc.r, pc.g, pc.b);
                                 }
                             }
@@ -343,45 +433,36 @@ Communication.prototype = {
                             vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
                             // If line gradient color given, then use this color
                             if (Array.isArray(modelFile["color"])){
-                                if (modelFile["color"].length === 2){
+                                if (modelFile["color"].length === 2 && (! (isNaN(modelFile["color"][0]))) && (! (isNaN(modelFile["color"][1])))){
                                     let p0c = new THREE.Color(), p1c = new THREE.Color();
                                     p0c.set(modelFile["color"][0]);
                                     p1c.set(modelFile["color"][1]);
                                     colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
                                 }
-                                else if (modelFile["color"].length === vd.length){
-                                    if (Array.isArray(modelFile["color"][index])){
+                                else {
+                                    if (Array.isArray(modelFile["color"][index % modelFile["color"].length])){
                                         let p0c = new THREE.Color();
-                                        p0c.set(modelFile["color"][index][0]);
+                                        p0c.set(modelFile["color"][index % modelFile["color"].length][0]);
                                         let p1c = new THREE.Color();
-                                        p1c.set(modelFile["color"][index][1]);
+                                        p1c.set(modelFile["color"][index % modelFile["color"].length][1]);
                                         colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
                                     }
+                                    else{
+                                        throw "Error: color and line segment pairs don't match"
+                                    }
                                 }
-                                else if (modelFile["color"].length === vd.length * 2){
-                                    let p0c = new THREE.Color();
-                                    p0c.set(modelFile["color"][index*2]);
-                                    let p1c = new THREE.Color();
-                                    p1c.set(modelFile["color"][index*2 + 1]);
-                                    colors.push(p0c.r, p0c.g, p0c.b, p1c.r, p1c.g, p1c.b);
-                                }
+
                             }
                             break;
                     }
                 }
-                geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+                geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
                 if (colors.length === vertices.length){
-                    geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
                 }
 
                 // Set up Line Color and material
-                if (! isNaN(modelFile["color"])){
-                    material = new THREE.LineBasicMaterial({color: modelFile["color"]});
-                }
-                else{
-                    material = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors });
-                }
-
+                material = that.create_material(modelFile, DEFAULT_LINE_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.LineBasicMaterial);
 
                 // Create container for lines
                 switch(modelFile["geometryType"]){
@@ -394,29 +475,12 @@ Communication.prototype = {
                         break;
                 }
 
-                if ("geometryName" in modelFile){
-                    container.name = modelFile["geometryName"];
-                }
-                else{
-                    container.name = modelFile["geometryType"];
-                }
-
-                // If configuration exist, set model to that configuration
-                if ("configuration" in modelFile) {
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
-                }
-
-                return container;
                 break;
             case ["triangles", "triangleOnesides", "trianglePairs"].includes(modelFile["geometryType"]):
                 // Validation checking
                 vd = modelFile["geometryData"];
                 if ((! geometryDataValidation(vd))){
                     return undefined;
-                }
-                if (! "color" in modelFile){
-                    // Default color if color field missing
-                    modelFile["color"] = DEFAULT_MESH_COLOR;
                 }
 
                 // Create triangles
@@ -428,55 +492,17 @@ Communication.prototype = {
                     case "triangles":
                         for (let index = 0; index < vd.length ; index++){
                             vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
-                            if (! isNaN(modelFile["color"])){
-                                let pc = new THREE.Color();
-                                pc.set(modelFile["color"]);
-                                colors.push(pc.r, pc.g, pc.b);
-                            }
-                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length == 3){
-                                let p0c = new THREE.Color();
-                                p0c.set(modelFile["color"][index % 3]);
-                                colors.push(p0c.r, p0c.g, p0c.b);
-                            }
-                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length == vd.length){
-                                let pc = new THREE.Color();
-                                pc.set(modelFile["color"][index]);
-                                colors.push(pc.r, pc.g, pc.b);
-                            }
-                            else if (Array.isArray(modelFile["color"])){
+                            if (Array.isArray(modelFile["color"])){
                                 let pc = new THREE.Color();
                                 pc.set(modelFile["color"][index % modelFile["color"].length]);
                                 colors.push(pc.r, pc.g, pc.b);
                             }
-                            // if (index % 3 === 2){
-                            //     vertices.push(...vertices.slice((index-2)*3, (index-2)*3+3));
-                            //     vertices.push(...vertices.slice((index-0)*3, (index-0)*3+3));
-                            //     vertices.push(...vertices.slice((index-1)*3, (index-1)*3+3));
-                            //     colors.push(...colors.slice((index-2)*3, (index-2)*3+3));
-                            //     colors.push(...colors.slice((index-0)*3, (index-0)*3+3));
-                            //     colors.push(...colors.slice((index-1)*3, (index-1)*3+3));
-                            // }
                         }
                         break;
                     case "triangleOnesides":
                         for (let index = 0; index < vd.length ; index++){
                             vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
-                            if (! isNaN(modelFile["color"])){
-                                let pc = new THREE.Color();
-                                pc.set(modelFile["color"]);
-                                colors.push(pc.r, pc.g, pc.b);
-                            }
-                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === 3){
-                                let p0c = new THREE.Color();
-                                p0c.set(modelFile["color"][index % 3]);
-                                colors.push(p0c.r, p0c.g, p0c.b);
-                            }
-                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === vd.length){
-                                let pc = new THREE.Color();
-                                pc.set(modelFile["color"][index]);
-                                colors.push(pc.r, pc.g, pc.b);
-                            }
-                            else if (Array.isArray(modelFile["color"])){
+                            if (Array.isArray(modelFile["color"])){
                                 let pc = new THREE.Color();
                                 pc.set(modelFile["color"][index % modelFile["color"].length]);
                                 colors.push(pc.r, pc.g, pc.b);
@@ -488,25 +514,7 @@ Communication.prototype = {
                             vertices.push(vd[index][0][0], vd[index][0][1], typeof(vd[index][0][2]) !== "undefined" ? vd[index][0][2] : 0);
                             vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
                             vertices.push(vd[index][2][0], vd[index][2][1], typeof(vd[index][2][2]) !== "undefined" ? vd[index][2][2] : 0);
-                            // vertices.push(vd[index][0][0], vd[index][0][1], typeof(vd[index][0][2]) !== "undefined" ? vd[index][0][2] : 0);
-                            // vertices.push(vd[index][2][0], vd[index][2][1], typeof(vd[index][2][2]) !== "undefined" ? vd[index][2][2] : 0);
-                            // vertices.push(vd[index][1][0], vd[index][1][1], typeof(vd[index][1][2]) !== "undefined" ? vd[index][1][2] : 0);
-                            if (! isNaN(modelFile["color"])){
-                                let pc = new THREE.Color();
-                                pc.set(modelFile["color"]);
-                                let c = [pc.r, pc.g, pc.b];
-                                colors.push(...c, ...c, ...c);
-                                // colors.push(...c, ...c, ...c);
-                            }
-                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === 3){
-                                let p0c = new THREE.Color(), p1c = new THREE.Color(), p2c = new THREE.Color();
-                                p0c.set(modelFile["color"][0]); let p0cA = [p0c.r, p0c.g, p0c.b];
-                                p1c.set(modelFile["color"][1]); let p1cA = [p1c.r, p1c.g, p1c.b];
-                                p2c.set(modelFile["color"][2]); let p2cA = [p2c.r, p2c.g, p2c.b];
-                                colors.push(...p0cA, ...p1cA, ...p2cA);
-                                // colors.push(...p0cA, ...p2cA, ...p1cA);
-                            }
-                            else if (Array.isArray(modelFile["color"]) && modelFile["color"].length === vd.length){
+                            if (Array.isArray(modelFile["color"]) && modelFile["color"].length === vd.length){
                                 if (! Array.isArray(modelFile["color"][index])){
                                     console.log("Error: Incorrect color format, use default black");
                                     let pc = new THREE.Color();
@@ -519,71 +527,119 @@ Communication.prototype = {
                                 p1c.set(modelFile["color"][index][1]); let p1cA = [p1c.r, p1c.g, p1c.b];
                                 p2c.set(modelFile["color"][index][2]); let p2cA = [p2c.r, p2c.g, p2c.b];
                                 colors.push(...p0cA, ...p1cA, ...p2cA);
-                                // colors.push(...p0cA, ...p2cA, ...p1cA);
                             }
                         }
                         break;
                     default:
                         break;
                 }
-                geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-                geometry.addAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-                if ("opacity" in modelFile && (! isNaN(modelFile["opacity"]))){
-                    material = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors, side: THREE.DoubleSide, transparent: true, opacity: modelFile["opacity"]});
-                }
-                else {
-                    material = new THREE.MeshBasicMaterial({vertexColors: THREE.VertexColors, side: THREE.DoubleSide});
-                }
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.MeshBasicMaterial);
 
                 container = new THREE.Mesh(geometry, material);
 
-                // Set up name
-                if ("geometryName" in modelFile){
-                    container.name = modelFile["geometryName"];
-                }
-                else{
-                    container.name = modelFile["geometryType"];
-                }
-
-                // If configuration exist, set model to that configuration
-                if ("configuration" in modelFile) {
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                break;
+            case ["points", "pointCloud"].includes(modelFile["geometryType"]):
+                // Validation checking
+                vd = modelFile["geometryData"];
+                if ((! geometryDataValidation(vd))){
+                    return undefined;
                 }
 
-                return container;
+                geometry = new THREE.BufferGeometry();
+                vertices = [];
+                colors = [];
+                // Create point cloud with color
+                switch (modelFile["geometryType"]){
+                    case "points":
+                    case "pointCloud":
+                        for (let index = 0; index < vd.length; index++){
+                            vertices.push(vd[index][0], vd[index][1], typeof(vd[index][2]) !== "undefined" ? vd[index][2] : 0);
+                            if (Array.isArray(modelFile["color"])){
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index % modelFile["color"].length]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
+                // Set up Point Color and material
+                material = that.create_material(modelFile, DEFAULT_LINE_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.PointsMaterial);
+
+                container = new THREE.Points(geometry, material);
                 break;
             case ["point"].includes(modelFile["geometryType"]):
                 geometry = new THREE.SphereGeometry(typeof(modelFile["geometryData"][3]) === "undefined" ? 0.1 : modelFile["geometryData"][3], 8, 6);
-                if(! "color" in modelFile){
-                    // Default point color
-                    modelFile["color"] = DEFAULT_POINT_COLOR;
-                }
 
                 // Set up Line Color and material
-                if (! isNaN(modelFile["color"])){
-                    material = new THREE.MeshBasicMaterial({color: modelFile["color"]});
-                }
-                container = new THREE.Mesh(geometry, material);
+                material = that.create_material(modelFile, DEFAULT_POINT_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.MeshBasicMaterial);
 
-                // Set up name
-                if ("geometryName" in modelFile){
-                    container.name = modelFile["geometryName"];
-                }
-                else{
-                    container.name = modelFile["geometryType"];
-                }
+                container = new THREE.Mesh(geometry, material);
 
                 // Set up point position
                 container.position.set(modelFile["geometryData"][0], modelFile["geometryData"][1], typeof(modelFile["geometryData"][2]) === "undefined" ? 0 : modelFile["geometryData"][2]);
 
-                // If configuration exist, set model to that configuration
-                if ("configuration" in modelFile) {
-                    container = that.applyTransformToContainer(container, modelFile.configuration)
+                break;
+            case ["polygon"].includes(modelFile["geometryType"]):
+                let temp_geometry = new THREE.Geometry();
+                vertices = [];
+                let holes = [];
+
+                if ("geometryData" in modelFile){
+                    let polygonData = modelFile["geometryData"];
+                    for (let p_index in polygonData){
+                        // Only 2D data will be allowed to push into vertices.
+                        // If we have 3D data, then check if they are on same plane, and apply rotation to make it lie on xy plane
+                        if(polygonData[p_index].length === 2){
+                            vertices.push(new THREE.Vector2(polygonData[p_index][0], polygonData[p_index][1]));
+                            temp_geometry.vertices.push(new THREE.Vector3(polygonData[p_index][0], polygonData[p_index][1], 0));
+                        }
+                        else if (polygonData[p_index].length === 3){
+                            console.log("Polygon 3D not implemented yet. ")
+                        }
+                    }
+                }
+                // holes part not finished, need to learn more about holes type.
+                // if ("holes" in modelFile){
+                //     let holesData = modelFile["holes"];
+                //     for (let p_index in holesData){
+                //         // Only 2D data will be allowed to push into holes.
+                //         // If we have 3D data, then check if they are on same plane, and apply rotation to make it lie on xy plane
+                //         if(holesData[p_index].length === 2){
+                //             holes.push(new THREE.Vector2(holesData[p_index][0], holesData[p_index][1]));
+                //         }
+                //     }
+                // }
+
+                let triangle_faces = THREE.ShapeUtils.triangulateShape(vertices, holes);
+                for (let i = 0 ; i < triangle_faces.length; i++){
+                    // Set up vertices positions
+                    let face = new THREE.Face3(triangle_faces[i][0], triangle_faces[i][1], triangle_faces[i][2]);
+                    // Set up vertices colors
+                    if (Array.isArray(modelFile["color"])) {
+                        let pc1 = new THREE.Color(), pc2 = new THREE.Color(), pc3 = new THREE.Color();
+                        pc1.set(modelFile["color"][triangle_faces[i][0] % modelFile["color"].length]);
+                        pc2.set(modelFile["color"][triangle_faces[i][1] % modelFile["color"].length]);
+                        pc3.set(modelFile["color"][triangle_faces[i][2] % modelFile["color"].length]);
+                        face.vertexColors = [pc1, pc2, pc3];
+                    }
+                    // Add face to geometry
+                    temp_geometry.faces.push(face);
                 }
 
-                return container;
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.MeshBasicMaterial);
+
+                geometry = new THREE.BufferGeometry().fromGeometry(temp_geometry);
+
+                container = new THREE.Mesh(geometry, material);
+
                 break;
             case true:
             default:
@@ -591,5 +647,19 @@ Communication.prototype = {
                 console.log(modelFile);
                 return undefined;
         }
+        // Set up name
+        if ("geometryName" in modelFile){
+            container.name = modelFile["geometryName"];
+        }
+        else{
+            container.name = modelFile["geometryType"];
+        }
+
+        // If configuration exist, set model to that configuration
+        if ("configuration" in modelFile) {
+            container = that.applyTransformToContainer(container, modelFile.configuration)
+        }
+
+        return container;
     }
 };

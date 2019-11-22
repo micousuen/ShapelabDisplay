@@ -26,7 +26,11 @@ var Config = function () {
 		'settings/shortcuts/rotate': 'e',
 		'settings/shortcuts/scale': 'r',
 		'settings/shortcuts/undo': 'z',
-		'settings/shortcuts/focus': 'f'
+		'settings/shortcuts/focus': 'f',
+		'settings/shortcuts/screenshot': 'p',
+		'settings/shortcuts/visible': 'v',
+
+		'settings/liveupdate/defaultGroupName': 'fileEntry'
 	};
 
 	if ( window.localStorage[ name ] === undefined ) {

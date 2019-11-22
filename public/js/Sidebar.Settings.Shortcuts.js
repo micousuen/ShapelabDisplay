@@ -20,7 +20,7 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 	var container = new UI.Div();
 	container.add( new UI.Break() );
 
-	var shortcuts = [ 'translate', 'rotate', 'scale', 'undo', 'focus' ];
+	var shortcuts = [ 'translate', 'rotate', 'scale', 'undo', 'focus', 'screenshot' ];
 
 	function createShortcutInput( name ) {
 
@@ -157,6 +157,24 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 					editor.focus( editor.selected );
 
 				}
+
+				break;
+
+			case config.getKey('settings/shortcuts/visible'):
+
+				if (editor.selected !== null && editor.selected instanceof THREE.Object3D) {
+
+					editor.selected.visible = ! editor.selected.visible;
+
+					editor.signals.objectVisibleChanged.dispatch();
+
+				}
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/screenshot' ):
+
+				signals.saveCanvasEvent.dispatch();
 
 				break;
 

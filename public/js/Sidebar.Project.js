@@ -142,6 +142,7 @@ Sidebar.Project = function ( editor ) {
 
 			case 'WebGLRenderer':
 				parameters.antialias = antialias;
+				parameters.preserveDrawingBuffer = true;
 				break;
 
 			case 'RaytracingRenderer':
@@ -149,6 +150,7 @@ Sidebar.Project = function ( editor ) {
 				parameters.workerPath = '../examples/js/renderers/RaytracingWorker.js';
 				parameters.randomize = true;
 				parameters.blockSize = 64;
+				parameters.preserveDrawingBuffer = true;
 				break;
 
 		}

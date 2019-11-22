@@ -1,10 +1,15 @@
 {
-  "name": "gui-sc",
-  "version": "0.0.1",
+  "name": "ShapelabDisplay",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
+    "prestart": "run-script-os",
     "start": "node ./bin/server.js",
-    "startdocker": "node ./bin/server.js mongo 27017"
+    "prestart:win32": "start /B \"\" mongod --dbpath ./db --bind_ip 127.0.0.1 --auth > ./db/db_log &",
+    "start:win32": "node ./bin/server.js",
+    "prestart:linux:darwin:default": "mongod --dbpath ./db --bind_ip 127.0.0.1 --auth &",
+    "start:linux:darwin:default": "node ./bin/server.js",
+    "startdocker": "node --max_old_space_size=8196 ./bin/server.js mongo 27017"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
@@ -18,11 +23,10 @@
     "morgan": "~1.9.0",
     "npm": "^6.5.0",
     "socket.io": "^2.2.0",
-    "three": "^0.99.0",
+    "three": "^0.103.0",
     "zeromq": "^5.1.0"
   },
   "devDependencies": {
-    "webpack": "^4.28.0",
-    "webpack-cli": "^3.1.2"
+    "run-script-os": "^1.0.7"
   }
 }
