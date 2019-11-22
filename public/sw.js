@@ -1,52 +1,47 @@
-// r103
+// r110
 
-const staticAssets = [
+const assets = [
 	'./',
 
-	'./js/libs/whammy.js',
-	'./js/libs/jquery-3.3.1.min.js',
-	'./js/libs/threejs/build/three.js',
-	'./js/libs/threejs/examples/js/libs/system.min.js',
+	'../files/favicon.ico',
 
-	'./js/libs/threejs/examples/js/controls/EditorControls.js',
-	'./js/libs/threejs/examples/js/controls/TransformControls.js',
+	'../build/three.js',
 
-	'./js/libs/threejs/examples/js/libs/jszip.min.js',
-	'./js/libs/threejs/examples/js/libs/inflate.min.js',
+	'../examples/js/controls/TransformControls.js',
 
-	'./js/libs/threejs/examples/js/loaders/AMFLoader.js',
-	'./js/libs/threejs/examples/js/loaders/AWDLoader.js',
-	'./js/libs/threejs/examples/js/loaders/BabylonLoader.js',
-	'./js/libs/threejs/examples/js/loaders/ColladaLoader.js',
-	'./js/libs/threejs/examples/js/loaders/DRACOLoader.js',
-	'./js/libs/threejs/examples/js/loaders/FBXLoader.js',
-	'./js/libs/threejs/examples/js/loaders/GLTFLoader.js',
-	'./js/libs/threejs/examples/js/loaders/deprecated/LegacyGLTFLoader.js',
-	'./js/libs/threejs/examples/js/loaders/KMZLoader.js',
-	'./js/libs/threejs/examples/js/loaders/MD2Loader.js',
-	'./js/libs/threejs/examples/js/loaders/OBJLoader.js',
-	'./js/libs/threejs/examples/js/loaders/MTLLoader.js',
-	'./js/libs/threejs/examples/js/loaders/PlayCanvasLoader.js',
-	'./js/libs/threejs/examples/js/loaders/PLYLoader.js',
-	'./js/libs/threejs/examples/js/loaders/STLLoader.js',
-	'./js/libs/threejs/examples/js/loaders/SVGLoader.js',
-	'./js/libs/threejs/examples/js/loaders/TGALoader.js',
-	'./js/libs/threejs/examples/js/loaders/TDSLoader.js',
-	'./js/libs/threejs/examples/js/loaders/VRMLLoader.js',
-	'./js/libs/threejs/examples/js/loaders/VTKLoader.js',
-	'./js/libs/threejs/examples/js/loaders/ctm/lzma.js',
-	'./js/libs/threejs/examples/js/loaders/ctm/ctm.js',
-	'./js/libs/threejs/examples/js/loaders/ctm/CTMLoader.js',
+	'../examples/js/libs/chevrotain.min.js',
+	'../examples/js/libs/jszip.min.js',
+	'../examples/js/libs/inflate.min.js',
 
-	'./js/libs/threejs/examples/js/exporters/ColladaExporter.js',
-	'./js/libs/threejs/examples/js/exporters/GLTFExporter.js',
-	'./js/libs/threejs/examples/js/exporters/OBJExporter.js',
-	'./js/libs/threejs/examples/js/exporters/STLExporter.js',
+	'../examples/js/loaders/AMFLoader.js',
+	'../examples/js/loaders/ColladaLoader.js',
+	'../examples/js/loaders/DRACOLoader.js',
+	'../examples/js/loaders/FBXLoader.js',
+	'../examples/js/loaders/GLTFLoader.js',
+	'../examples/js/loaders/deprecated/LegacyGLTFLoader.js',
+	'../examples/js/loaders/KMZLoader.js',
+	'../examples/js/loaders/MD2Loader.js',
+	'../examples/js/loaders/OBJLoader.js',
+	'../examples/js/loaders/MTLLoader.js',
+	'../examples/js/loaders/PLYLoader.js',
+	'../examples/js/loaders/STLLoader.js',
+	'../examples/js/loaders/SVGLoader.js',
+	'../examples/js/loaders/TGALoader.js',
+	'../examples/js/loaders/TDSLoader.js',
+	'../examples/js/loaders/VRMLLoader.js',
+	'../examples/js/loaders/VTKLoader.js',
 
-	'./js/libs/threejs/examples/js/renderers/Projector.js',
-	'./js/libs/threejs/examples/js/renderers/RaytracingRenderer.js',
-	'./js/libs/threejs/examples/js/renderers/SoftwareRenderer.js',
-	'./js/libs/threejs/examples/js/renderers/SVGRenderer.js',
+	'../examples/js/exporters/ColladaExporter.js',
+	'../examples/js/exporters/GLTFExporter.js',
+	'../examples/js/exporters/OBJExporter.js',
+	'../examples/js/exporters/STLExporter.js',
+
+	'../examples/js/renderers/Projector.js',
+	'../examples/js/renderers/RaytracingRenderer.js',
+	'../examples/js/renderers/SVGRenderer.js',
+
+	'./manifest.json',
+	'./images/icon.png',
 
 	'./js/libs/codemirror/codemirror.css',
 	'./js/libs/codemirror/theme/monokai.css',
@@ -55,6 +50,7 @@ const staticAssets = [
 	'./js/libs/codemirror/mode/javascript.js',
 	'./js/libs/codemirror/mode/glsl.js',
 
+	'./js/libs/system.min.js',
 	'./js/libs/esprima.js',
 	'./js/libs/jsonlint.js',
 	'./js/libs/glslprep.min.js',
@@ -89,14 +85,13 @@ const staticAssets = [
 	'./js/Player.js',
 	'./js/Script.js',
 
-	'./js/libs/threejs/examples/js/vr/WebVR.js',
+	'../examples/js/vr/WebVR.js',
 
 	//
 
 	'./css/main.css',
-	'./css/dark.css',
-	'./css/light.css',
 
+	'./js/EditorControls.js',
 	'./js/Storage.js',
 
 	'./js/Editor.js',
@@ -127,13 +122,19 @@ const staticAssets = [
 	'./js/Sidebar.Geometry.BoxGeometry.js',
 	'./js/Sidebar.Geometry.CircleGeometry.js',
 	'./js/Sidebar.Geometry.CylinderGeometry.js',
+	'./js/Sidebar.Geometry.DodecahedronGeometry.js',
+	'./js/Sidebar.Geometry.ExtrudeGeometry.js',
 	'./js/Sidebar.Geometry.IcosahedronGeometry.js',
+	'./js/Sidebar.Geometry.OctahedronGeometry.js',
 	'./js/Sidebar.Geometry.PlaneGeometry.js',
+	'./js/Sidebar.Geometry.RingGeometry.js',
 	'./js/Sidebar.Geometry.SphereGeometry.js',
+	'./js/Sidebar.Geometry.ShapeGeometry.js',
+	'./js/Sidebar.Geometry.TetrahedronGeometry.js',
 	'./js/Sidebar.Geometry.TorusGeometry.js',
 	'./js/Sidebar.Geometry.TorusKnotGeometry.js',
 	'./js/Sidebar.Geometry.TubeGeometry.js',
-	'./js/libs/threejs/examples/js/geometries/TeapotBufferGeometry.js',
+	'../examples/js/geometries/TeapotBufferGeometry.js',
 	'./js/Sidebar.Geometry.TeapotBufferGeometry.js',
 	'./js/Sidebar.Geometry.LatheGeometry.js',
 	'./js/Sidebar.Material.js',
@@ -143,6 +144,7 @@ const staticAssets = [
 	'./js/Strings.js',
 	'./js/Toolbar.js',
 	'./js/Viewport.js',
+	'./js/Viewport.Camera.js',
 	'./js/Viewport.Info.js',
 
 	'./js/Command.js',
@@ -162,9 +164,10 @@ const staticAssets = [
 	'./js/commands/RemoveScriptCommand.js',
 	'./js/commands/SetScriptValueCommand.js',
 	'./js/commands/SetMaterialCommand.js',
-	'./js/commands/SetMaterialValueCommand.js',
 	'./js/commands/SetMaterialColorCommand.js',
 	'./js/commands/SetMaterialMapCommand.js',
+	'./js/commands/SetMaterialValueCommand.js',
+	'./js/commands/SetMaterialVectorCommand.js',
 	'./js/commands/SetSceneCommand.js',
 
 	//
@@ -177,10 +180,19 @@ const staticAssets = [
 
 ];
 
-self.addEventListener( 'install', async function ( event ) {
+self.addEventListener( 'install', async function () {
 
 	const cache = await caches.open( 'threejs-editor' );
-	cache.addAll( staticAssets );
+
+	assets.forEach( function ( asset ) {
+
+		cache.add( asset ).catch( function () {
+
+			console.error( '[SW] Cound\'t cache:', asset );
+
+		} );
+
+	} );
 
 } );
 
@@ -194,6 +206,14 @@ self.addEventListener( 'fetch', async function ( event ) {
 async function cacheFirst( request ) {
 
 	const cachedResponse = await caches.match( request );
-	return cachedResponse || fetch( request );
+
+	if ( cachedResponse === undefined ) {
+
+		console.error( '[SW] Not cached:', request.url );
+		return fetch( request );
+
+	}
+
+	return cachedResponse;
 
 }

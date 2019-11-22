@@ -10,7 +10,6 @@ var Config = function () {
 		'language': 'en',
 
 		'autosave': true,
-		'theme': 'css/light.css',
 
 		'project/title': '',
 		'project/editable': false,
@@ -23,14 +22,11 @@ var Config = function () {
 
 		'settings/history': false,
 
-		'settings/shortcuts/translate': 't',
-		'settings/shortcuts/rotate': 'r',
-		'settings/shortcuts/scale': 's',
+		'settings/shortcuts/translate': 'w',
+		'settings/shortcuts/rotate': 'e',
+		'settings/shortcuts/scale': 'r',
 		'settings/shortcuts/undo': 'z',
-		'settings/shortcuts/focus': 'f',
-		'settings/shortcuts/screenshot': 'p',
-
-		'settings/liveupdate/defaultGroupName': 'fileEntry'
+		'settings/shortcuts/focus': 'f'
 	};
 
 	if ( window.localStorage[ name ] === undefined ) {

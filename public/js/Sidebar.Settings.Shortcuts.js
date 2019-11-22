@@ -20,9 +20,10 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 	var container = new UI.Div();
 	container.add( new UI.Break() );
 
-	var shortcuts = [ 'translate', 'rotate', 'scale', 'undo', 'focus', 'screenshot' ];
+	var shortcuts = [ 'translate', 'rotate', 'scale', 'undo', 'focus' ];
 
 	function createShortcutInput( name ) {
+
 		var configName = 'settings/shortcuts/' + name;
 		var shortcutRow = new UI.Row();
 
@@ -107,7 +108,7 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 				if ( object === null ) return;
 
 				var parent = object.parent;
-				if ( parent !== null ) editor.execute( new RemoveObjectCommand( object ) );
+				if ( parent !== null ) editor.execute( new RemoveObjectCommand( editor, object ) );
 
 				break;
 
@@ -156,12 +157,6 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 					editor.focus( editor.selected );
 
 				}
-
-				break;
-
-			case config.getKey( 'settings/shortcuts/screenshot' ):
-
-				signals.saveCanvasEvent.dispatch();
 
 				break;
 

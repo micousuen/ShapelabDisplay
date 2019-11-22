@@ -20,7 +20,7 @@ var APP = {
 
 		this.load = function ( json ) {
 
-			renderer = new THREE.WebGLRenderer( { antialias: true, preserveDrawingBuffer: true} );
+			renderer = new THREE.WebGLRenderer( { antialias: true } );
 			renderer.gammaOutput = true;
 			renderer.setClearColor( 0x000000 );
 			renderer.setPixelRatio( window.devicePixelRatio );
@@ -112,7 +112,7 @@ var APP = {
 
 			if ( renderer.vr.enabled ) {
 
-				dom.appendChild( WEBVR.createButton( renderer ) );
+				dom.appendChild( THREE.WEBVR.createButton( renderer ) );
 
 			}
 
@@ -155,29 +155,6 @@ var APP = {
 		}
 
 		var time, prevTime;
-		var videoRecorder=null;
-
-		function animateAndRecord() {
-
-			time = performance.now();
-
-			try {
-
-				dispatch( events.update, { time: time, delta: time - prevTime } );
-
-			} catch ( e ) {
-
-				console.error( ( e.message || e ), ( e.stack || "" ) );
-
-			}
-
-			renderer.render( scene, camera );
-
-			videoRecorder.add(renderer.domElement.toDataURL("image/webp"));
-
-			prevTime = time;
-
-		}
 
 		function animate() {
 
@@ -198,27 +175,6 @@ var APP = {
 			prevTime = time;
 
 		}
-
-		this.playAndRecord = function () {
-
-			prevTime = performance.now();
-
-			document.addEventListener( 'keydown', onDocumentKeyDown );
-			document.addEventListener( 'keyup', onDocumentKeyUp );
-			document.addEventListener( 'mousedown', onDocumentMouseDown );
-			document.addEventListener( 'mouseup', onDocumentMouseUp );
-			document.addEventListener( 'mousemove', onDocumentMouseMove );
-			document.addEventListener( 'touchstart', onDocumentTouchStart );
-			document.addEventListener( 'touchend', onDocumentTouchEnd );
-			document.addEventListener( 'touchmove', onDocumentTouchMove );
-
-			videoRecorder = new Whammy.Video(30, 1);
-
-			dispatch( events.start, arguments );
-
-			renderer.setAnimationLoop( animateAndRecord );
-
-		};
 
 		this.play = function () {
 
@@ -254,17 +210,6 @@ var APP = {
 
 			renderer.setAnimationLoop( null );
 
-			if (! (videoRecorder === null)){
-				var startTime = new Date().getTime();
-				videoRecorder.compile(false, function(output){
-					console.log( '[' + /\d\d\:\d\d\:\d\d/.exec( new Date() )[ 0 ] + ']', "Finished animation generation, cost time: ", new Date().getTime()-startTime, " ms");
-					let download = document.getElementById("animationDownload");
-					download.setAttribute('download', 'CanvasAnimation.webm');
-					download.setAttribute('href', (window.webkitURL || window.URL).createObjectURL(output));
-					videoRecorder = null;
-					download.click();
-				});
-			}
 		};
 
 		this.dispose = function () {

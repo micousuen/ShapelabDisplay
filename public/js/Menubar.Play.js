@@ -15,53 +15,24 @@ Menubar.Play = function ( editor ) {
 	var title = new UI.Panel();
 	title.setClass( 'title' );
 	title.setTextContent( strings.getKey( 'menubar/play' ) );
-	container.add(title);
+	title.onClick( function () {
 
-	var options = new UI.Panel();
-	options.setClass('options');
-	container.add(options);
+		if ( isPlaying === false ) {
 
-	var playOption = new UI.Row();
-	playOption.setClass('option');
-	playOption.setTextContent(strings.getKey('menubar/play/play'));
-	playOption.onClick(function(){
-		isPlaying = true;
-		title.setTextContent(strings.getKey('menubar/play/stop'));
-		signals.startPlayer.dispatch();
-		container.remove(options);
-		title.onClick( function () {
-			if (isPlaying === true) {
-				isPlaying = false;
-				title.setTextContent(strings.getKey('menubar/play/play'));
-				signals.stopPlayer.dispatch();
-				container.add(options);
-				title.dom.removeAttribute("onclick")
-			}
-		} );
-	});
-	options.add(playOption);
+			isPlaying = true;
+			title.setTextContent( strings.getKey( 'menubar/play/stop' ) );
+			signals.startPlayer.dispatch();
 
-	var recordOption = new UI.Row();
-	recordOption.setClass('option');
-	recordOption.setTextContent(strings.getKey('menubar/play/playAndRecord'));
-	recordOption.onClick(function(){
-		isPlaying = true;
-		title.setTextContent(strings.getKey('menubar/play/stop'));
-		signals.startPlayerAndRecord.dispatch();
-		container.remove(options);
-		title.onClick( function () {
-			if (isPlaying === true) {
-				isPlaying = false;
-				title.setTextContent(strings.getKey('menubar/play/play'));
-				signals.stopPlayer.dispatch();
-				container.add(options);
-				title.dom.removeAttribute("onclick")
-			}
-		} );
-	});
-	options.add(recordOption);
+		} else {
 
+			isPlaying = false;
+			title.setTextContent( strings.getKey( 'menubar/play/play' ) );
+			signals.stopPlayer.dispatch();
 
+		}
+
+	} );
+	container.add( title );
 
 	return container;
 

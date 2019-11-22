@@ -13,13 +13,6 @@ var Editor = function () {
 
 	this.signals = {
 
-		// Server Sync operations
-		loadScene: new Signal(),
-		clearScene: new Signal(),
-		sendScene: new Signal(),
-		fileEntryUpdate: new Signal(),
-		fileEntryDelete: new Signal(),
-
 		// script
 
 		editScript: new Signal(),
@@ -27,24 +20,14 @@ var Editor = function () {
 		// player
 
 		startPlayer: new Signal(),
-		startPlayerAndRecord: new Signal(),
 		stopPlayer: new Signal(),
-
-		// actions
-		showModal: new Signal(),
-		saveCanvasEvent: new Signal(),
 
 		// notifications
 
 		editorCleared: new Signal(),
 
-		sendSceneStarted: new Signal(),
-		sendSceneFinished: new Signal(),
-
 		savingStarted: new Signal(),
 		savingFinished: new Signal(),
-
-		themeChanged: new Signal(),
 
 		transformModeChanged: new Signal(),
 		snapChanged: new Signal(),
@@ -72,7 +55,9 @@ var Editor = function () {
 		helperAdded: new Signal(),
 		helperRemoved: new Signal(),
 
+		materialAdded: new Signal(),
 		materialChanged: new Signal(),
+		materialRemoved: new Signal(),
 
 		scriptAdded: new Signal(),
 		scriptChanged: new Signal(),
@@ -82,7 +67,6 @@ var Editor = function () {
 
 		showGridChanged: new Signal(),
 		refreshSidebarObject3D: new Signal(),
-		historyChanged: new Signal(),
 		historyChanged: new Signal(),
 
 		viewportCameraChanged: new Signal()
@@ -120,19 +104,10 @@ var Editor = function () {
 	this.viewportCamera = this.camera;
 
 	this.addCamera( this.camera );
+
 };
 
 Editor.prototype = {
-
-	setTheme: function ( value ) {
-
-		document.getElementById( 'theme' ).href = value;
-
-		this.signals.themeChanged.dispatch( value );
-
-	},
-
-	//
 
 	setScene: function ( scene ) {
 
@@ -233,23 +208,6 @@ Editor.prototype = {
 
 	},
 
-    removeObjectByName: function(objectName, parentObject){
-	    // Warning: this function will remove all object with this name recursively
-		let that = this;
-		if (typeof(parentObject) === "undefined"){
-			parentObject = this.scene;
-		}
-		parentObject.traverse(function(child){
-			if (child.name === objectName){
-				that.removeHelper(child);
-				parentObject.remove(child);
-				that.signals.objectRemoved.dispatch(child);
-			}
-		});
-
-		this.signals.sceneGraphChanged.dispatch();
-    },
-
 	addGeometry: function ( geometry ) {
 
 		this.geometries[ geometry.uuid ] = geometry;
@@ -266,6 +224,34 @@ Editor.prototype = {
 	addMaterial: function ( material ) {
 
 		this.materials[ material.uuid ] = material;
+		this.signals.materialAdded.dispatch();
+
+	},
+
+	removeMaterial: function ( material ) {
+
+		delete this.materials[ material.uuid ];
+		this.signals.materialRemoved.dispatch();
+
+	},
+
+	getMaterialById: function ( id ) {
+
+		var material;
+		var materials = Object.values( this.materials );
+
+		for ( var i = 0; i < materials.length; i ++ ) {
+
+			if ( materials[ i ].id === id ) {
+
+				material = materials[ i ];
+				break;
+
+			}
+
+		}
+
+		return material;
 
 	},
 

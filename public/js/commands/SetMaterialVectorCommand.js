@@ -3,44 +3,39 @@
  * Developed as part of a project at University of Applied Sciences and Arts Northwestern Switzerland (www.fhnw.ch)
  */
 
-/**
- * @param editor Editor
- * @param object THREE.Object3D
- * @param attributeName string
- * @param newValue number, string, boolean or object
- * @constructor
- */
-
-var SetValueCommand = function ( editor, object, attributeName, newValue ) {
+var SetMaterialVectorCommand = function ( editor, object, attributeName, newValue, materialSlot ) {
 
 	Command.call( this, editor );
 
-	this.type = 'SetValueCommand';
-	this.name = 'Set ' + attributeName;
+	this.type = 'SetMaterialColorCommand';
+	this.name = 'Set Material.' + attributeName;
 	this.updatable = true;
 
 	this.object = object;
-	this.attributeName = attributeName;
-	this.oldValue = ( object !== undefined ) ? object[ attributeName ] : undefined;
+	this.material = this.editor.getObjectMaterial( object, materialSlot );
+
+	this.oldValue = ( this.material !== undefined ) ? this.material[ attributeName ].toArray() : undefined;
 	this.newValue = newValue;
+
+	this.attributeName = attributeName;
 
 };
 
-SetValueCommand.prototype = {
+SetMaterialVectorCommand.prototype = {
 
 	execute: function () {
 
-		this.object[ this.attributeName ] = this.newValue;
-		this.editor.signals.objectChanged.dispatch( this.object );
-		// this.editor.signals.sceneGraphChanged.dispatch();
+		this.material[ this.attributeName ].fromArray( this.newValue );
+
+		this.editor.signals.materialChanged.dispatch( this.material );
 
 	},
 
 	undo: function () {
 
-		this.object[ this.attributeName ] = this.oldValue;
-		this.editor.signals.objectChanged.dispatch( this.object );
-		// this.editor.signals.sceneGraphChanged.dispatch();
+		this.material[ this.attributeName ].fromArray( this.oldValue );
+
+		this.editor.signals.materialChanged.dispatch( this.material );
 
 	},
 
@@ -67,10 +62,10 @@ SetValueCommand.prototype = {
 
 		Command.prototype.fromJSON.call( this, json );
 
+		this.object = this.editor.objectByUuid( json.objectUuid );
 		this.attributeName = json.attributeName;
 		this.oldValue = json.oldValue;
 		this.newValue = json.newValue;
-		this.object = this.editor.objectByUuid( json.objectUuid );
 
 	}
 
