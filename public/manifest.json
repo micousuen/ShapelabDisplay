@@ -1,13 +1,14 @@
 {
-  "short_name": "ShapelabDisplay",
-  "name": "Shapelab Display",
+  "name": "Three.js Editor",
+  "short_name": "Three.js",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
   "icons": [
     {
-      "src": "./favicon.ico",
-      "type": "image/x-icon",
-      "sizes": "192x192"
+      "src": "./images/icon.png",
+      "type": "image/png",
+      "sizes": "144x144"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone"
+  ]
 }

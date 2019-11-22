@@ -100,7 +100,7 @@ var Viewport = function ( editor ) {
 
 					if ( ! objectPositionOnDown.equals( object.position ) ) {
 
-						editor.execute( new SetPositionCommand( object, object.position, objectPositionOnDown ) );
+						editor.execute( new SetPositionCommand( editor, object, object.position, objectPositionOnDown ) );
 
 					}
 
@@ -110,7 +110,7 @@ var Viewport = function ( editor ) {
 
 					if ( ! objectRotationOnDown.equals( object.rotation ) ) {
 
-						editor.execute( new SetRotationCommand( object, object.rotation, objectRotationOnDown ) );
+						editor.execute( new SetRotationCommand( editor, object, object.rotation, objectRotationOnDown ) );
 
 					}
 
@@ -120,7 +120,7 @@ var Viewport = function ( editor ) {
 
 					if ( ! objectScaleOnDown.equals( object.scale ) ) {
 
-						editor.execute( new SetScaleCommand( object, object.scale, objectScaleOnDown ) );
+						editor.execute( new SetScaleCommand( editor, object, object.scale, objectScaleOnDown ) );
 
 					}
 
@@ -172,21 +172,38 @@ var Viewport = function ( editor ) {
 
 			if ( intersects.length > 0 ) {
 
-				var object = intersects[ 0 ].object;
+				// Select first visible object
+				let object = null;
+				for (let intersects_index in intersects){
 
-				if ( object.userData.object !== undefined ) {
+					if (editor.checkObjectVisible(intersects[intersects_index].object)){
 
-					// helper
+						object = intersects[intersects_index].object;
+						break;
 
-					editor.select( object.userData.object );
-
-				} else {
-
-					editor.select( object );
-
+					}
 				}
 
-			} else {
+				if (object === null){
+
+					editor.select(null);
+
+				}
+				else {
+					if ( object.userData.object !== undefined ) {
+
+						// helper
+
+						editor.select( object.userData.object );
+
+					} else {
+
+						editor.select( object );
+
+					}
+				}
+			}
+			else {
 
 				editor.select( null );
 
@@ -303,14 +320,17 @@ var Viewport = function ( editor ) {
 	} );
 
 	signals.saveCanvasEvent.add(function(){
-		let imgData;
-		imgData = renderer.domElement.toDataURL("image/png");
-		imgData = imgData.replace("image/png", "image/octet-stream");
-		// Toggle download action
+		// Prepare download link
 		let download = document.getElementById("imageDownload");
-		download.setAttribute('download', 'CanvasScreenShot.png');
-		download.setAttribute('href', imgData);
-		download.click();
+		download.setAttribute('download', 'CanvasShot_'+ /\d\d\:\d\d\:\d\d/.exec(new Date())[0]+'.png');
+
+		// Turn canvas to a blob first, then download it. In this way, img size won't constraint by browser src length limit
+		renderer.domElement.toBlob(function(blob){
+
+			download.href = URL.createObjectURL(blob);
+			download.click()
+
+		});
 	});
 
 	signals.rendererChanged.add( function ( newRenderer ) {
@@ -342,6 +362,12 @@ var Viewport = function ( editor ) {
 	} );
 
 	signals.cameraChanged.add( function () {
+
+		render();
+
+	} );
+
+	signals.objectVisibleChanged.add( function () {
 
 		render();
 
@@ -515,10 +541,18 @@ var Viewport = function ( editor ) {
 
 	signals.viewportCameraChanged.add( function ( viewportCamera ) {
 
-		camera = viewportCamera;
+		if ( viewportCamera.isPerspectiveCamera ) {
 
-		camera.aspect = editor.camera.aspect;
-		camera.projectionMatrix.copy( editor.camera.projectionMatrix );
+			viewportCamera.aspect = editor.camera.aspect;
+			viewportCamera.projectionMatrix.copy( editor.camera.projectionMatrix );
+
+		} else if ( ! viewportCamera.isOrthographicCamera ) {
+
+			throw "Invalid camera set as viewport";
+
+		}
+
+		camera = viewportCamera;
 
 		render();
 

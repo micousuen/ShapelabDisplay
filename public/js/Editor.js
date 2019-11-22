@@ -35,7 +35,6 @@ var Editor = function () {
 		StopSceneAnimation: new Signal(),
 
 		// actions
-		showModal: new Signal(),
 		saveCanvasEvent: new Signal(),
 
 		// notifications
@@ -47,8 +46,6 @@ var Editor = function () {
 
 		savingStarted: new Signal(),
 		savingFinished: new Signal(),
-
-		themeChanged: new Signal(),
 
 		transformModeChanged: new Signal(),
 		snapChanged: new Signal(),
@@ -69,6 +66,7 @@ var Editor = function () {
 		objectAdded: new Signal(),
 		objectChanged: new Signal(),
 		objectRemoved: new Signal(),
+		objectVisibleChanged: new Signal(),
 
 		cameraAdded: new Signal(),
 		cameraRemoved: new Signal(),
@@ -76,7 +74,9 @@ var Editor = function () {
 		helperAdded: new Signal(),
 		helperRemoved: new Signal(),
 
+		materialAdded: new Signal(),
 		materialChanged: new Signal(),
+		materialRemoved: new Signal(),
 
 		scriptAdded: new Signal(),
 		scriptChanged: new Signal(),
@@ -86,7 +86,6 @@ var Editor = function () {
 
 		showGridChanged: new Signal(),
 		refreshSidebarObject3D: new Signal(),
-		historyChanged: new Signal(),
 		historyChanged: new Signal(),
 
 		viewportCameraChanged: new Signal()
@@ -104,7 +103,7 @@ var Editor = function () {
 
 	this.scene = new THREE.Scene();
 	this.scene.name = 'Scene';
-	this.scene.background = new THREE.Color( 0xaaaaaa );
+	this.scene.background = new THREE.Color( 0x8aacca );
 
 	this.sceneHelpers = new THREE.Scene();
 
@@ -124,19 +123,10 @@ var Editor = function () {
 	this.viewportCamera = this.camera;
 
 	this.addCamera( this.camera );
+
 };
 
 Editor.prototype = {
-
-	setTheme: function ( value ) {
-
-		document.getElementById( 'theme' ).href = value;
-
-		this.signals.themeChanged.dispatch( value );
-
-	},
-
-	//
 
 	setScene: function ( scene ) {
 
@@ -258,6 +248,34 @@ Editor.prototype = {
 	addMaterial: function ( material ) {
 
 		this.materials[ material.uuid ] = material;
+		this.signals.materialAdded.dispatch();
+
+	},
+
+	removeMaterial: function ( material ) {
+
+		delete this.materials[ material.uuid ];
+		this.signals.materialRemoved.dispatch();
+
+	},
+
+	getMaterialById: function ( id ) {
+
+		var material;
+		var materials = Object.values( this.materials );
+
+		for ( var i = 0; i < materials.length; i ++ ) {
+
+			if ( materials[ i ].id === id ) {
+
+				material = materials[ i ];
+				break;
+
+			}
+
+		}
+
+		return material;
 
 	},
 
@@ -622,6 +640,30 @@ Editor.prototype = {
 
 		return this.scene.getObjectByProperty( 'uuid', uuid, true );
 
+	},
+
+	checkObjectVisible: function (object){
+		let itr = object;
+
+		// Iterate through object and all its parents, if any of them set to invisible, then this object is invisible
+		// Set maximum iteration to 10000, to avoid loop setting
+		for(let i=0; i<10000; i++){
+
+			if (typeof(itr) === "undefined" || (! itr instanceof THREE.Object3D) ||
+            			typeof(itr.parent) === "undefined" ||
+				typeof(itr.visible) === "undefined" || itr.visible === false){
+
+				return false;
+
+			}
+			if (itr.parent === this.scene){
+
+				return true;
+
+			}
+			itr = object.parent;
+		}
+		return false;
 	},
 
 	execute: function ( cmd, optionalName ) {

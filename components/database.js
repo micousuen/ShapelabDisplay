@@ -40,6 +40,7 @@ module.exports = {
     databaseCollectionMaximumRecords: 1000,
     conns : {},
     models: {},
+    dataTypes: ["editor", "liveupdate"],
 
     // Chunk long string
     chunkLongString: function(str, size){
@@ -77,11 +78,13 @@ module.exports = {
         DBurl = 'mongodb://'+mongoUsername.toString()+':'+mongoPassword.toString()+'@'+mongoServer.toString()+':'+mongoPort.toString()+'/'+DBname.toString()+'?authSource='+mongoAuthDB;
         var that = this; // Used to transfer current owner object
         var buildBaseConnection = function(){
+
             // Connect to database, mangoose will automatically reconnect if disconnected. Handle reconnection if error occur here
             // When using createConnection to build connection, replace mongoose.model with conn.model (conn is the return value of createConnection)
             that.conns["base"] = mongoose.createConnection(DBurl, {useNewUrlParser: true});
             that.conns["base"].on('error', function(err){console.log("Warning: Cannot connect to database because ",err); that.dbReconnectCallback(that, forWhat)});
             that.conns["base"].on('connected', function(){that.dbConnectCallback(that, forWhat)});
+
             // Connect to userList collection and save model. This is required
             that.models["base"] = that.conns["base"].model('userList', that.schema.userList, 'userList'); // Build model for collection 'userList'
         };
@@ -132,23 +135,6 @@ module.exports = {
         });
     },
 
-    // Used to save live update data
-    saveLiveupdateData: function(username, password, liveupdateData, errorCallBack, successCallBack){
-        if (! this.baseChecking()){
-            errorCallBack("Server didn't build connection to database");
-            return;
-        }
-        let that = this;
-
-        let authSuccessCallBack = function(){
-            that.saveDataCallBack(username, liveupdateData, "liveupdate", errorCallBack, successCallBack);
-        };
-
-        // Start to run userAuthentication and save data
-        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
-
-    },
-
     // Used to get Liveupdate data
     loadLiveupdateData: function(username, password, errorCallBack, successCallBack){
         if (! this.baseChecking()){
@@ -181,21 +167,6 @@ module.exports = {
         that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack)
     },
 
-    // Used to process and save editor Data
-    saveEditorData: function(username, password, editorData, errorCallBack, successCallBack){
-        if (! this.baseChecking()){
-            errorCallBack("Server didn't build connection to database");
-            return;
-        }
-        let that = this;
-
-        let authSuccessCallBack = function(){
-            that.saveDataCallBack(username, editorData, "editor", errorCallBack, successCallBack);
-        };
-
-        // Start to run userAuthentication and save data
-        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
-    },
     loadLatestDataCallBack(username, dataType, errorCallBack, successCallBack){
         // Load latest data from database
 
@@ -242,6 +213,38 @@ module.exports = {
         // Step 3: load data and reply
         loadCallBack();
     },
+
+    // Save live update data
+    saveLiveupdateData: function(username, password, liveupdateData, errorCallBack, successCallBack){
+        this.saveData(username, password, liveupdateData, "liveupdate", errorCallBack, successCallBack);
+    },
+
+    // Save scenery data (editor data)
+    saveEditorData: function(username, password, editorData, errorCallBack, successCallBack){
+        this.saveData(username, password, editorData, "editor", errorCallBack, successCallBack);
+    },
+
+    // General data saving function
+    saveData: function (username, password, data, dataType, errorCallBack, successCallBack){
+        if (! this.baseChecking()){
+            errorCallBack("Server didn't build connection to database");
+            return;
+        }
+        let that = this;
+
+        if (! (that.dataTypes.includes(dataType))){
+            errorCallBack("Unkown Data type!");
+            return;
+        }
+
+        let authSuccessCallBack = function(){
+            that.saveDataCallBack(username, data, dataType, errorCallBack, successCallBack);
+        };
+
+        // Start to run userAuthentication and save data
+        that.userAuthenticate(username, password, errorCallBack, authSuccessCallBack);
+    },
+
     saveDataCallBack(username, data, dataType, errorCallBack, successCallBack){
         // Save data to database after authentication
         let that = this;
@@ -295,23 +298,23 @@ module.exports = {
             if (num >= that.databaseCollectionMaximumRecords) {
                 // Remove oldest 10% data
                 let percentageToRemove = 0.1;
-                let dataTypes = ["editor", "liveupdate"];
-                for (let dataTypeIndex = 0; dataTypeIndex < dataTypes.length; dataTypeIndex ++){
-                    that.models[username+".index"].find({"dataType": dataTypes[dataTypeIndex]}).countDocuments(function(err, typeNum) {
+
+                for (let dataTypeIndex = 0; dataTypeIndex < that.dataTypes.length; dataTypeIndex ++){
+                    that.models[username+".index"].find({"dataType": that.dataTypes[dataTypeIndex]}).countDocuments(function(err, typeNum) {
                         if (typeNum >= Math.ceil(1 / percentageToRemove)) {
-                            that.models[username + ".index"].find({"dataType": dataTypes[dataTypeIndex]}).sort({epochTime: 1}).limit(Math.max(Math.ceil(percentageToRemove * typeNum), 1)).exec(function (err, result) {
+                            that.models[username + ".index"].find({"dataType": that.dataTypes[dataTypeIndex]}).sort({epochTime: 1}).limit(Math.max(Math.ceil(percentageToRemove * typeNum), 1)).exec(function (err, result) {
                                 if (result.length < 1){
                                     return;
                                 }
                                 let last_epochTime = result[result.length - 1].epochTime;
-                                that.models[username].deleteMany({"dataType": dataTypes[dataTypeIndex], epochTime: {$lte: last_epochTime}, }, function (err) {
+                                that.models[username].deleteMany({"dataType": that.dataTypes[dataTypeIndex], epochTime: {$lte: last_epochTime}, }, function (err) {
                                     // If error in deleting, return error to client
                                     if (err) {
                                         errorCallBack("Failed in removing user's oldest history");
                                         return;
                                     }
                                     // If succeed then remove index
-                                    that.models[username + ".index"].deleteMany({"dataType": dataTypes[dataTypeIndex], epochTime: {$lte: last_epochTime}}, function (err) {
+                                    that.models[username + ".index"].deleteMany({"dataType": that.dataTypes[dataTypeIndex], epochTime: {$lte: last_epochTime}}, function (err) {
                                         // If error in deleting, return error to client
                                         if (err) {
                                             errorCallBack("Failed in removing user's oldest history");
@@ -321,7 +324,7 @@ module.exports = {
                                 });
                             })
                         }
-                        if (dataTypeIndex >= dataTypes.length - 1){
+                        if (dataTypeIndex >= that.dataTypes.length - 1){
                             saveCallBack();
                         }
                     })

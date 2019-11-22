@@ -21,11 +21,11 @@ Menubar.Status = function ( editor ) {
 	});
 	container.add(loadScene);
 
-    var saveScene = new UI.Button('SAVE');
-    saveScene.onClick(function(){
-        editor.signals.sendScene.dispatch();
-    });
-    container.add(saveScene);
+	var saveScene = new UI.Button('SAVE');
+	saveScene.onClick(function(){
+	editor.signals.sendScene.dispatch();
+	});
+	container.add(saveScene);
 
 	var autosave = new UI.THREE.Boolean( editor.config.getKey( 'autosave' ), strings.getKey( 'menubar/status/autosave' ) );
 	autosave.text.setColor( '#888' );
