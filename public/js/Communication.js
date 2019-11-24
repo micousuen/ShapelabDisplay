@@ -62,7 +62,7 @@ var Communication = function(editor){
     });
     editor.signals.loadScene.add(function(){that.loadScene(editor)});
     editor.signals.clearScene.add(function(){editor.clear()});
-}
+};
 
 Communication.prototype = {
     socket: undefined,
@@ -637,6 +637,97 @@ Communication.prototype = {
                 material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.MeshBasicMaterial);
 
                 geometry = new THREE.BufferGeometry().fromGeometry(temp_geometry);
+
+                container = new THREE.Mesh(geometry, material);
+
+                break;
+            case ["plane", "planeStandard", "planeNormalPosition"].includes(modelFile["geometryType"]):
+                // Validation will be done in plane creation
+                vd = modelFile["geometryData"];
+
+                // Create plane
+                let width=100, height=100;
+                if ("size" in modelFile){
+                    if (Array.isArray(modelFile["size"]) && modelFile["size"].length==2){
+                        width=modelFile["size"][0];
+                        height=modelFile["size"][1];
+                    }
+                    if (typeof(modelFile["size"]) === "number"){
+                        width=modelFile["size"];
+                        height=modelFile["size"];
+                    }
+                }
+                geometry = new THREE.PlaneBufferGeometry(width, height);
+
+                colors = [];
+                let face_normal=null, face_x=0, face_y=0, face_z=0;
+                // Set up triangle position and vertex color
+                switch (modelFile["geometryType"]){
+                    case "plane":
+                    case "planeStandard":
+                        if (vd.length !== 4){
+                            log("Incorrect geometry plane: ", vd);
+                            return undefined;
+                        }
+
+                        // pre-compute some face normal and face position
+                        face_normal = new THREE.Vector3(vd[0], vd[1], vd[2]).normalize();
+                        if (Math.abs(vd[0]) > 1e-9){
+                            face_x = (-vd[3])/vd[0];
+                        }
+                        else if (Math.abs(vd[1]) > 1e-9){
+                            face_y = (-vd[3])/vd[1];
+                        }
+                        else if (Math.abs(vd[2]) > 1e-9){
+                            face_z = (-vd[3])/vd[2];
+                        }
+                        else{
+                            log("Illegal plane definition: ", vd)
+                        }
+
+                        geometry.lookAt(face_normal);
+                        geometry.translate(face_x, face_y, face_z);
+
+                        for (let index=0; index < 4; index++) {
+                            if (Array.isArray(modelFile["color"])) {
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index % modelFile["color"].length]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                        }
+
+                        break;
+
+                    case "planeNormalPosition":
+                        if (vd.length !== 2 || vd[0].length !== 3 || vd[1].length !== 3) {
+                            log("Incorrect geometry plane: ", vd);
+                            return undefined;
+                        }
+
+                        face_normal = new THREE.Vector3(vd[0][0], vd[0][1], vd[0][2]).normalize();
+                        face_x = vd[1][0];
+                        face_y = vd[1][1];
+                        face_z = vd[1][2];
+
+                        geometry.lookAt(face_normal);
+                        geometry.translate(face_x, face_y, face_z);
+
+                        for (let index=0; index < 4; index++) {
+                            if (Array.isArray(modelFile["color"])) {
+                                let pc = new THREE.Color();
+                                pc.set(modelFile["color"][index % modelFile["color"].length]);
+                                colors.push(pc.r, pc.g, pc.b);
+                            }
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+                material = that.create_material(modelFile, DEFAULT_MESH_COLOR, 1.0, Array.isArray(modelFile["color"]), THREE.MeshBasicMaterial);
 
                 container = new THREE.Mesh(geometry, material);
 
