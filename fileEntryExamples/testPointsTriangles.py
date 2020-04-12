@@ -128,7 +128,10 @@ dataString = json.dumps([triangle_mesh, \
 						 point4_dict, \
 						 point4_line, \
 						 half_space_plane, \
-						 transparent_mesh], sort_keys=True)
+						 transparent_mesh, 
+                         {"GroupProperties": {"GroupName": "testPointsTriangles"}, \
+                          "username": "admin", \
+                          "password": "admin"}], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
 while True:
     t1 = time.time()
