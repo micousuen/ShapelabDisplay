@@ -75,21 +75,24 @@ Menubar.Add = function ( editor ) {
 	option.setClass('option');
 	option.setTextContent(strings.getKey( 'menubar/add/arrow' ) );
 	option.onClick( function () {
-        let container = new THREE.Group();
-        container.name = "Arrow";
+        let arrow_geometry = new THREE.Geometry();
 
-		let top_geometry = new THREE.CylinderBufferGeometry(0, 0.08, 0.15, 16, 8, false, 0, Math.PI * 2);
-		let top_mesh = new THREE.Mesh(top_geometry, new THREE.MeshStandardMaterial({color: 0xff0000}) );
-		let bot_geometry = new THREE.CylinderBufferGeometry(0.03, 0.03, 0.3, 16, 8, false, 0, Math.PI * 2);
-		let bot_mesh = new THREE.Mesh(bot_geometry, new THREE.MeshStandardMaterial({color: 0xff0000}) );
-		bot_mesh.position.y += 0.15;
-		top_mesh.position.y += 0.3;
-		top_mesh.name = "Arrow.top";
-		bot_mesh.name = "Arrow.bottom";
+		let top_geometry = new THREE.CylinderGeometry(0, 0.08, 0.15, 16, 8, false, 0, Math.PI * 2);
+		top_geometry.translate(0, 0.3, 0);
+		let top_mesh = new THREE.Mesh(top_geometry);
+		let bot_geometry = new THREE.CylinderGeometry(0.03, 0.03, 0.3, 16, 8, false, 0, Math.PI * 2);
+		bot_geometry.translate(0, 0.15, 0);
+		let bot_mesh = new THREE.Mesh(bot_geometry);
 
-		container.add(top_mesh);
-		container.add(bot_mesh);
-		editor.execute(new AddObjectCommand(container));
+		top_mesh.updateMatrix();
+		bot_mesh.updateMatrix();
+		arrow_geometry.merge(top_mesh.geometry, top_mesh.matrix);
+		arrow_geometry.merge(bot_mesh.geometry, bot_mesh.matrix);
+		let arrow_mesh = new THREE.Mesh(arrow_geometry, new THREE.MeshStandardMaterial({color: 0xff0000}));
+		arrow_mesh.name = "Arrow";
+
+
+		editor.execute(new AddObjectCommand(editor, arrow_mesh));
 	});
 	options.add(option);
 

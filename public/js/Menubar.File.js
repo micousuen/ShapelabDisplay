@@ -275,7 +275,15 @@ Menubar.File = function ( editor ) {
 
 		var exporter = new THREE.STLExporter();
 
-		saveString( exporter.parse( editor.scene ), 'model.stl' );
+		var object = editor.selected;
+
+		if ( object === null ) {
+
+			object = editor.scene;
+
+		}
+
+		saveString( exporter.parse( object ), 'model.stl' );
 
 	} );
 	options.add( option );
@@ -289,7 +297,15 @@ Menubar.File = function ( editor ) {
 
 		var exporter = new THREE.STLExporter();
 
-		saveArrayBuffer( exporter.parse( editor.scene, { binary: true } ), 'model-binary.stl' );
+		var object = editor.selected;
+
+		if ( object === null ) {
+
+			object = editor.scene;
+
+		}
+
+		saveArrayBuffer( exporter.parse( object, { binary: true } ), 'model-binary.stl' );
 
 	} );
 	options.add( option );

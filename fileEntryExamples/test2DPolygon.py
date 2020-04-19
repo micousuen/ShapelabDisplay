@@ -33,7 +33,7 @@ polygon = {"geometryType": "polygon", \
 		   "username": "admin", \
 		   "password": "admin"}
 
-dataString = json.dumps([polygon], sort_keys=True)
+dataString = json.dumps([polygon, {"GroupProperties":{"GroupName":"2D-Polygon"}, "username": "admin", "password": "admin"}], sort_keys=True)
 dataBinaryString = dataString.encode(encoding='utf_8', errors='strict')
 while True:
     t1 = time.time()
